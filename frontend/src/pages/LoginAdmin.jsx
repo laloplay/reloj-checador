@@ -32,7 +32,7 @@ function LoginAdmin() {
     <div className="d-flex align-items-center justify-content-center" style={{ height: '100vh' }}>
       <div className="card shadow-lg" style={{ width: '24rem' }}>
         <div className="card-body p-5">
-          <h3 className="card-title text-center mb-4">Acceso Administrativo</h3>
+          <h3 className="card-title text-center mb-4">Acceso Administrativo hola</h3>
           <form onSubmit={handleLogin}>
             <div className="form-floating mb-3">
               <input 
