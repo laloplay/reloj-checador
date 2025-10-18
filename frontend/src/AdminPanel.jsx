@@ -86,7 +86,7 @@ function AdminPanel() {
           <li className="nav-item mb-1">
             <a href="#" className="nav-link active" aria-current="page">
               <i className="bi bi-person-plus-fill me-2"></i>
-              Nuevo Registro
+              Nuevo Registr
             </a>
           </li>
           <li>
