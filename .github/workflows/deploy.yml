@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: 1. Descargar código del repositorio
+    - name: 1. Descargar código
       uses: actions/checkout@v3
 
     - name: 2. Configurar Node.js
@@ -17,47 +17,30 @@ jobs:
       with:
         node-version: '20'
 
-    - name: 3. Construir el Frontend
+    - name: 3. Construir Frontend
       run: |
         cd frontend
         npm install
         npm run build
 
-    - name: 4. Subir Backend al Servidor
-      uses: appleboy/scp-action@master
+    - name: 4. Instalar Llave SSH
+      uses: shimataro/ssh-key-action@v2
       with:
-        host: ${{ secrets.SERVER_HOST }}
-        username: ${{ secrets.SERVER_USER }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
-        source: "backend/"
-        target: "/var/www/reloj-checador-a"
-        overwrite: true
+        known_hosts: 'just-a-placeholder-so-we-dont-get-errors'
+    
+    - name: 5. Desplegar con rsync
+      run: |
+        # Añade la IP del servidor a los hosts conocidos para evitar prompts
+        ssh-keyscan -H ${{ secrets.SERVER_HOST }} >> ~/.ssh/known_hosts
+        
+        # Sube el backend
+        rsync -avz --delete ./backend/ ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:/var/www/reloj-checador-a/backend/
+        
+        # Sube el frontend
+        rsync -avz --delete ./frontend/dist/ ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:/var/www/reloj-checador-a/dist/
 
-    - name: 5. Preparar carpeta remota para el Frontend
-      uses: appleboy/ssh-action@master
-      with:
-        host: ${{ secrets.SERVER_HOST }}
-        username: ${{ secrets.SERVER_USER }}
-        key: ${{ secrets.SSH_PRIVATE_KEY }}
-        script: |
-          echo "Creando carpeta dist con permisos correctos..."
-          sudo mkdir -p /var/www/reloj-checador-a/dist
-          sudo chown -R $USER:$USER /var/www/reloj-checador-a
-          sudo chmod -R 755 /var/www/reloj-checador-a
-          rm -rf /var/www/reloj-checador-a/dist/*
-          echo "Carpeta dist lista para recibir archivos."
-
-    - name: 6. Subir nueva carpeta 'dist'
-      uses: appleboy/scp-action@master
-      with:
-        host: ${{ secrets.SERVER_HOST }}
-        username: ${{ secrets.SERVER_USER }}
-        key: ${{ secrets.SSH_PRIVATE_KEY }}
-        source: "frontend/dist/*"
-        target: "/var/www/reloj-checador-a/dist"
-        overwrite: true
-
-    - name: 7. Reiniciar la aplicación en el servidor
+    - name: 6. Reiniciar aplicación en el servidor
       uses: appleboy/ssh-action@master
       with:
         host: ${{ secrets.SERVER_HOST }}
@@ -66,6 +49,5 @@ jobs:
         script: |
           cd /var/www/reloj-checador-a/backend
           npm install --production
-          pm2 restart api-checador || pm2 start index.js --name api-checador
+          pm2 restart api-checador
           sudo systemctl restart nginx
-          echo "✅ Despliegue completado correctamente."
