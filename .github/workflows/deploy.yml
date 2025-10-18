@@ -50,7 +50,7 @@ jobs:
         host: ${{ secrets.SERVER_HOST }}
         username: ${{ secrets.SERVER_USER }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
-        source: "frontend/dist/"
+        source: "frontend/dist/*"
         target: "/var/www/reloj-checador-a/dist"
         overwrite: true
 
