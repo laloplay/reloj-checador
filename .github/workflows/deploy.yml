@@ -18,7 +18,7 @@ jobs:
         node-version: '20'
 
     - name: 3. Construir Frontend
-      run: |
+      run: |  
         cd frontend
         npm install
         npm run build
@@ -35,7 +35,7 @@ jobs:
         ssh-keyscan -H ${{ secrets.SERVER_HOST }} >> ~/.ssh/known_hosts
         
         # Sube el backend
-        rsync -avz --delete ./backend/ ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:/var/www/reloj-checador-a/backend/
+        rsync -avz --delete --exclude-from='backend/.rsync-exclude' ./backend/ ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:/var/www/reloj-checador-a/backend/
         
         # Sube el frontend
         rsync -avz --delete ./frontend/dist/ ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:/var/www/reloj-checador-a/dist/

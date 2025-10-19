@@ -1,0 +1,7 @@
+# Archivo .rsync-exclude
+
+# ¡MUY IMPORTANTE! No borrar el archivo de entorno del servidor
+.env
+
+# Ignorar la carpeta de dependencias
+node_modules
