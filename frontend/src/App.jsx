@@ -18,7 +18,7 @@ import SucursalesAdmin from './pages/SucursalesAdmin';
 import BonosAdmin from './pages/BonosAdmin';
 
 // --- CONFIGURACIÓN PARA TIEMPO REAL ---
-const socket = io('http://localhost:3001');
+const socket = io();
 
 // ==========================================================
 //  NUEVO DASHBOARD CON LÓGICA DE APROBACIÓN
