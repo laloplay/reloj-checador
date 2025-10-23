@@ -14,6 +14,17 @@ const Bono = require('./models/Bono');
 const Registro = require('./models/Registro');
 const { RekognitionClient, IndexFacesCommand, SearchFacesByImageCommand } = require("@aws-sdk/client-rekognition");
 
+// ==========================================
+// ASOCIACIONES DE LA BASE DE DATOS
+// Aquí definimos todas las relaciones en un solo lugar.
+// ==========================================
+Dispositivo.belongsTo(Sucursal, { foreignKey: 'sucursalId' });
+Sucursal.hasMany(Dispositivo, { foreignKey: 'sucursalId' });
+
+Empleado.hasMany(Registro, { foreignKey: 'employeeId' });
+Registro.belongsTo(Empleado, { foreignKey: 'employeeId' });
+// ==========================================
+
 // --- CONFIGURACIÓN INICIAL ---
 const app = express();
 app.use(cors());
@@ -67,10 +78,11 @@ app.get('/api/devices/pending', async (req, res) => {
 
 app.post('/api/devices/approve', async (req, res) => {
   try {
-    const { id } = req.body;
+    const { id, sucursalId } = req.body;
     const device = await Dispositivo.findByPk(id);
     if (device) {
       device.status = 'approved';
+      device.sucursalId = sucursalId;
       await device.save();
       res.json({ success: true, message: `Dispositivo ${id} aprobado.` });
     } else {
@@ -98,6 +110,7 @@ app.post('/api/employees', async (req, res) => {
     res.status(500).json({ error: 'Error al crear el empleado.' });
   }
 });
+
 app.post('/api/employees/:employeeId/register-face', async (req, res) => {
   const { employeeId } = req.params;
   const { image } = req.body;
@@ -117,37 +130,97 @@ app.post('/api/employees/:employeeId/register-face', async (req, res) => {
     res.status(500).json({ error: 'Error en el servidor de reconocimiento.' });
   }
 });
+
 app.post('/api/attendance/check-in', async (req, res) => {
-  const { image } = req.body;
-  if (!image) return res.status(400).json({ error: "No se recibió ninguna imagen." });
-  
+  console.log("\n---");
+  console.log("A1. ✅ Petición recibida en /api/attendance/check-in");
+  const { image, fingerprint } = req.body; 
+
+  if (!image) {
+    console.log("A2. ❌ Error: No se recibió imagen.");
+    return res.status(400).json({ error: "Datos incompletos (imagen o fingerprint)." });
+  }
+  if (!fingerprint) {
+    console.log("A2. ❌ Error: No se recibió fingerprint del dispositivo.");
+    return res.status(400).json({ error: "Datos incompletos (imagen o fingerprint)." });
+  }
+  console.log("A2. 👍 Imagen y Fingerprint recibidos.");
+
   const imageBuffer = Buffer.from(image.replace(/^data:image\/jpeg;base64,/, ""), 'base64');
+  console.log("A3. 🔄 Imagen convertida a formato binario (Buffer).");
 
   try {
+    // Paso 1: Verificar el dispositivo y su sucursal
+    console.log("A4. 🔍 Verificando dispositivo en la BD...");
+    const device = await Dispositivo.findOne({ 
+      where: { fingerprint: fingerprint, status: 'approved' },
+      include: { model: Sucursal, attributes: ['nombre'] } 
+    });
+    console.log("A4.1. 👍 Verificación de dispositivo terminada.");
+
+    if (!device) {
+      console.log("A5. ❌ Error: Dispositivo no autorizado.");
+      return res.status(403).json({ success: false, message: 'Dispositivo no autorizado.' });
+    }
+    
+    if (!device.Sucursal) {
+      console.log("A5. ❌ Error: Dispositivo aprobado pero no tiene sucursal asignada.");
+      return res.status(500).json({ success: false, message: 'Error de configuración: El dispositivo no tiene sucursal asignada.' });
+    }
+    console.log("A5. 👍 Dispositivo autorizado. Pertenece a la sucursal:", device.Sucursal.nombre);
+
+    // Paso 2: Enviar foto a AWS Rekognition para reconocimiento
+    console.log("A6. 📡 Enviando foto a AWS Rekognition para análisis...");
     const command = new SearchFacesByImageCommand({
       CollectionId: COLLECTION_ID,
       Image: { Bytes: imageBuffer },
       MaxFaces: 1,
       FaceMatchThreshold: 98,
     });
-    
     const data = await rekognitionClient.send(command);
+    console.log("A7. 👍 Respuesta recibida de AWS Rekognition.");
 
     if (data.FaceMatches && data.FaceMatches.length > 0) {
       const employeeId = data.FaceMatches[0].Face.ExternalImageId;
-      
+      console.log(`A8. 🟢 ¡Éxito! Rostro reconocido para empleado ID: ${employeeId}.`);
+
+      // Paso 3: Verificar al empleado y comparar sucursales
+      console.log("A9. 🔍 Verificando empleado y sucursal en la BD...");
+      const employee = await Empleado.findByPk(parseInt(employeeId));
+      if (!employee) {
+        console.log("A10. ❌ Error: Empleado reconocido por AWS pero no encontrado en la BD.");
+        return res.status(404).json({ success: false, message: 'Empleado no encontrado en la BD.' });
+      }
+      console.log(`A10. 👍 Empleado encontrado: ${employee.nombre}. Sucursal del Empleado: ${employee.sucursal}`);
+
+      if (device.Sucursal.nombre !== employee.sucursal) {
+        console.log("A11. ❌ Acceso Denegado: Sucursal no coincide.");
+        return res.status(403).json({ 
+          success: false, 
+          message: `Acceso Denegado: Este dispositivo es de ${device.Sucursal.nombre}, pero tú perteneces a ${employee.sucursal}.` 
+        });
+      }
+      console.log("A11. 👍 Sucursales coinciden.");
+
+      // Paso 4: Guardar el registro de asistencia
+      console.log("A12. 💾 Guardando registro en la BD...");
       await Registro.create({
         employeeId: parseInt(employeeId),
-        type: 'ENTRADA' // Lógica simple por ahora
+        type: 'ENTRADA'
       });
-      console.log(`✅ Registro de ENTRADA guardado para empleado ID: ${employeeId}.`);
+      console.log("A13. ✅ Registro guardado con éxito.");
       
-      res.json({ success: true, employeeId });
+      // Paso 5: Enviar respuesta exitosa con el nombre del empleado
+      console.log("A14. 📤 Enviando respuesta final al frontend..."); // <-- NUEVO LOG
+      res.json({ success: true, employeeName: employee.nombre });
+      console.log("A15. 🏁 ¡Respuesta enviada!"); // <-- NUEVO LOG
+
     } else {
+      console.log("A8. 🟡 No se encontraron coincidencias en AWS.");
       res.status(404).json({ success: false, message: 'Rostro no reconocido.' });
     }
   } catch (error) {
-    console.error("Error en check-in:", error);
+    console.error("🔥🔥🔥 ¡ERROR CATASTRÓFICO EN /check-in! 🔥🔥🔥", error);
     res.status(500).json({ error: "Error al comunicarse con el servicio de reconocimiento." });
   }
 });
@@ -290,4 +363,3 @@ app.post('/api/auth/login', async (req, res) => {
 // EXPORTAR LA APP
 // ==========================================
 module.exports = app;
-

@@ -1,8 +1,8 @@
 // frontend/src/App.jsx
-import React, { useState, useEffect } from 'react'; // <-- IMPORTS ADICIONALES
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import axios from 'axios'; // <-- IMPORTS ADICIONALES
-import io from 'socket.io-client'; // <-- IMPORTS ADICIONALES
+import axios from 'axios';
+import io from 'socket.io-client';
 
 // --- COMPONENTES PRINCIPALES ---
 import Kiosk from './Kiosk';
@@ -17,19 +17,22 @@ import PuestosAdmin from './pages/PuestosAdmin';
 import SucursalesAdmin from './pages/SucursalesAdmin';
 import BonosAdmin from './pages/BonosAdmin';
 
-// --- CONFIGURACIÓN PARA TIEMPO REAL ---
+// --- CONFIGURACIÓN DE SOCKET.IO ---
+// Se conecta al mismo dominio (funciona en local y en producción)
 const socket = io();
 
 // ==========================================================
-//  NUEVO DASHBOARD CON LÓGICA DE APROBACIÓN
+//  DASHBOARD CON LÓGICA DE APROBACIÓN
 // ==========================================================
 function AdminDashboard() {
   const [pendingDevices, setPendingDevices] = useState([]);
+  const [sucursales, setSucursales] = useState([]);
+  const [selectedSucursal, setSelectedSucursal] = useState({});
   const [message, setMessage] = useState('');
 
-  // Cargar dispositivos al iniciar y escuchar por nuevos en tiempo real
   useEffect(() => {
     fetchPendingDevices();
+    fetchSucursales();
 
     socket.on('new_device_request', (newDevice) => {
       setPendingDevices(prevDevices => [newDevice, ...prevDevices]);
@@ -49,16 +52,38 @@ function AdminDashboard() {
       console.error("Error cargando dispositivos pendientes:", error);
     }
   };
+  
+  const fetchSucursales = async () => {
+    try {
+      const response = await axios.get('/api/sucursales');
+      setSucursales(response.data);
+    } catch (error) {
+      console.error("Error cargando sucursales:", error);
+    }
+  };
 
   const handleApprove = async (deviceId) => {
+    const sucursalId = selectedSucursal[deviceId];
+    if (!sucursalId) {
+      setMessage('Por favor, selecciona una sucursal para este dispositivo.');
+      return;
+    }
+
     try {
-      await axios.post('/api/devices/approve', { id: deviceId });
+      await axios.post('/api/devices/approve', { 
+        id: deviceId, 
+        sucursalId: sucursalId 
+      });
       setMessage(`Dispositivo ${deviceId} aprobado con éxito.`);
       setPendingDevices(prevDevices => prevDevices.filter(device => device.id !== deviceId));
     } catch (error) {
       console.error('Error al aprobar:', error);
       setMessage('Hubo un error al aprobar el dispositivo.');
     }
+  };
+
+  const handleSelectChange = (deviceId, sucursalId) => {
+    setSelectedSucursal(prev => ({ ...prev, [deviceId]: sucursalId }));
   };
 
   return (
@@ -77,15 +102,27 @@ function AdminDashboard() {
           {pendingDevices.length > 0 ? (
             <ul className="list-group">
               {pendingDevices.map((device) => (
-                <li key={device.id} className="list-group-item d-flex justify-content-between align-items-center">
-                  <div>
+                <li key={device.id} className="list-group-item d-flex flex-column flex-md-row justify-content-between align-items-md-center">
+                  <div className="mb-2 mb-md-0">
                     <span className="fw-bold">Dispositivo ID: {device.id}</span>
                     <br />
                     <span className="text-muted small">Código: {device.fingerprint}</span>
                   </div>
-                  <button className="btn btn-sm btn-outline-success" onClick={() => handleApprove(device.id)}>
-                    Aprobar
-                  </button>
+                  <div className="d-flex w-100 w-md-auto">
+                    <select 
+                      className="form-select form-select-sm me-2" 
+                      onChange={(e) => handleSelectChange(device.id, e.target.value)}
+                      value={selectedSucursal[device.id] || ''}
+                    >
+                      <option value="">Asignar a...</option>
+                      {sucursales.map(s => (
+                        <option key={s.id} value={s.id}>{s.nombre}</option>
+                      ))}
+                    </select>
+                    <button className="btn btn-sm btn-outline-success" onClick={() => handleApprove(device.id)}>
+                      Aprobar
+                    </button>
+                  </div>
                 </li>
               ))}
             </ul>
@@ -98,7 +135,7 @@ function AdminDashboard() {
   );
 }
 
-// --- El resto de tu componente App se queda igual ---
+// --- Componente principal de la App ---
 function App() {
   return (
     <Router>
@@ -111,7 +148,7 @@ function App() {
         {/* --- RUTAS PROTEGIDAS --- */}
         <Route element={<ProtectedRoute />}>
           <Route path="/admin" element={<AdminLayout />}>
-            <Route index element={<AdminDashboard />} /> {/* <-- Esta ruta ahora muestra el nuevo dashboard */}
+            <Route index element={<AdminDashboard />} />
             <Route path="registros" element={<RegistrosAdmin />} />
             <Route path="nuevo-registro" element={<NuevoRegistro />} />
             <Route path="puestos" element={<PuestosAdmin />} />

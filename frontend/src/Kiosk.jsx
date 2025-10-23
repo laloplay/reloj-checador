@@ -1,3 +1,4 @@
+// frontend/src/Kiosk.jsx
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import axios from 'axios';
 import FingerprintJS from '@fingerprintjs/fingerprintjs';
@@ -17,6 +18,7 @@ function Kiosk() {
   const [checkInMessage, setCheckInMessage] = useState({ type: '', text: '' });
   const [dateTime, setDateTime] = useState(new Date());
 
+  // --- Lógica de Captura (¡AQUÍ ESTÁ EL ARREGLO!) ---
   const capture = useCallback(async () => {
     setLoading(true);
     setCheckInMessage({ type: '', text: '' });
@@ -24,24 +26,38 @@ function Kiosk() {
 
     if (!imageSrc) {
       setCheckInMessage({ type: 'warning', text: '⚠️ No se pudo capturar la imagen.' });
-      setLoading(false);
+      setLoading(false); // Detenemos la carga si no hay foto
       return;
     }
+
     try {
-      const response = await axios.post('/api/attendance/check-in', { image: imageSrc });
-      setCheckInMessage({ type: 'success', text: `✅ ¡Bienvenido! Registro exitoso.` });
+      // 1. Hacemos la llamada a la API
+      const response = await axios.post('/api/attendance/check-in', { 
+        image: imageSrc,
+        fingerprint: fingerprint 
+      });
+
+      // 2. ¡LÓGICA DE ÉXITO QUE FALTABA!
+      // Usamos el 'employeeName' que nos envía el backend.
+      const employeeName = response.data.employeeName || 'Empleado';
+      setCheckInMessage({ type: 'success', text: `✅ ¡Bienvenido, ${employeeName}!` });
+
     } catch (error) {
+      // 3. LÓGICA DE ERROR
       console.error('Error en el check-in:', error);
-      const errorMsg = error.response?.status === 404
-        ? '❌ Rostro no reconocido.'
-        : '❌ Error de conexión al verificar.';
-      setCheckInMessage({ type: 'danger', text: errorMsg });
+      const errorMsg = error.response?.data?.message || 'Error de conexión al verificar.';
+      setCheckInMessage({ type: 'danger', text: `❌ ${errorMsg}` });
+
     } finally {
-      setLoading(false);
+      // 4. ¡LÓGICA 'FINALLY' QUE FALTABA!
+      // Esto se ejecuta SIEMPRE, ya sea éxito o error.
+      setLoading(false); // Detenemos el spinner
+      // Limpia el mensaje después de 7 segundos
       setTimeout(() => setCheckInMessage({ type: '', text: '' }), 7000);
     }
-  }, [webcamRef]);
+  }, [webcamRef, fingerprint]); // <-- fingerprint está incluido, ¡perfecto!
 
+  // --- Lógica de Verificación del Dispositivo (sin cambios) ---
   useEffect(() => {
     const getFingerprintAndVerify = async () => {
        try {
@@ -63,6 +79,7 @@ function Kiosk() {
 
   }, []);
 
+  // --- Función para formatear fecha y hora (sin cambios) ---
   const formatDateTime = (date) => {
     const optionsDate = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
     const optionsTime = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true, hourCycle: 'h12' };
@@ -74,6 +91,7 @@ function Kiosk() {
 
   const { date, time } = formatDateTime(dateTime);
 
+  // --- Renderizado del Contenido (sin cambios) ---
   const renderStatus = (icon, color, title, text, code = null) => (
     <Card className="text-center shadow-lg border-0 mx-auto text-dark bg-white animate__animated animate__fadeIn" style={{ maxWidth: '480px', borderRadius: '1rem' }}>
       <Card.Body className="p-5">
@@ -151,6 +169,7 @@ function Kiosk() {
     }
   };
 
+  // --- Estructura Principal del Componente (sin cambios) ---
   return (
     <div className="min-vh-100 d-flex flex-column align-items-center justify-content-center p-3" style={{ background: '#212529' }}>
       {renderContent()}
