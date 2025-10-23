@@ -22,7 +22,7 @@ function AdminLayout() {
           <li className="nav-item mb-1">
             <Link to="/admin/nuevo-registro" className={getLinkClass('/admin/nuevo-registro')}>
               <i className="bi bi-person-plus-fill me-2"></i>
-              Nuevo Empleado
+              Nuevo Empleadoooo
             </Link>
           </li>
           <li className="nav-item mb-1">
