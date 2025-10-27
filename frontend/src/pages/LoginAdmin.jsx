@@ -2,38 +2,42 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
-// Importamos los componentes de react-bootstrap
 import { Spinner, Alert, Card, Button, Form } from 'react-bootstrap';
-import 'animate.css'; // Asegúrate de tener esto instalado: npm install animate.css
+import 'animate.css'; 
 
 function LoginAdmin() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false); // Estado para el spinner
+  const [loading, setLoading] = useState(false); 
   const navigate = useNavigate();
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setError('');
-    setLoading(true); // Activa el spinner
+    setLoading(true); 
     try {
-      const response = await axios.post('/api/auth/login', { username, password });
+      // ==========================================================
+      // ✅ ¡AQUÍ ESTÁ LA CORRECCIÓN!
+      // Convertimos el 'username' a minúsculas antes de enviarlo.
+      // ==========================================================
+      const response = await axios.post('/api/auth/login', { 
+        username: username.toLowerCase(), 
+        password 
+      });
+      
       sessionStorage.setItem('authToken', response.data.token);
       navigate('/admin');
     } catch (err) {
       setError('Usuario o contraseña incorrectos.');
       console.error('Error de login:', err);
-      setLoading(false); // Desactiva el spinner si hay error
+      setLoading(false); 
     }
-    // No ponemos setLoading(false) aquí, porque si el login es exitoso, la página redirige.
   };
 
   return (
-    // 1. Usamos el mismo fondo que el Kiosko
     <div className="min-vh-100 d-flex flex-column align-items-center justify-content-center p-3" style={{ background: 'radial-gradient(circle at center, #2c3e50 0%, #1a202c 100%)' }}>
       
-      {/* 2. Usamos la misma tarjeta oscura flotante */}
       <Card 
         bg="dark" 
         text="white" 
@@ -41,19 +45,18 @@ function LoginAdmin() {
         style={{ maxWidth: '450px', borderRadius: '1rem', boxShadow: '0 10px 40px rgba(0,0,0,0.4)' }}
       >
         <Card.Body className="p-5">
-          {/* 3. Título "Vivito" con ícono */}
           <div className="text-center mb-4">
             <i className="bi bi-shield-lock-fill display-4 text-primary"></i>
             <h2 className="fw-bold mt-3">Acceso Admin</h2>
           </div>
 
           <Form onSubmit={handleLogin}>
-            {/* 4. Usamos Form.Floating de react-bootstrap para el look moderno */}
             <Form.Floating className="mb-3">
               <Form.Control
                 type="text"
                 id="username"
                 value={username}
+                // Mantenemos el onChange normal para que el usuario vea lo que escribe
                 onChange={e => setUsername(e.target.value)}
                 placeholder="Usuario"
                 required
@@ -80,7 +83,6 @@ function LoginAdmin() {
               </Alert>
             )}
 
-            {/* 5. Botón estilo "píldora" con spinner */}
             <Button
               type="submit"
               variant="primary"
@@ -100,7 +102,6 @@ function LoginAdmin() {
         </Card.Body>
       </Card>
       
-      {/* 6. Footer con enlace de vuelta al Kiosko */}
       <footer className="mt-4 text-center">
          <Link to="/" className="text-white-50 text-decoration-none fw-light" style={{ fontSize: '0.8rem', opacity: 0.5, transition: 'opacity 0.3s ease' }} onMouseOver={e => e.currentTarget.style.opacity = 1} onMouseOut={e => e.currentTarget.style.opacity = 0.5}>
            Volver al Kiosko

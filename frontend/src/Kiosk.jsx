@@ -3,7 +3,7 @@ import axios from 'axios';
 import FingerprintJS from '@fingerprintjs/fingerprintjs';
 import Webcam from 'react-webcam';
 import { Link } from 'react-router-dom'; 
-import { Spinner, Alert, Card, Button } from 'react-bootstrap';
+import { Spinner, Alert, Card, Button, Form } from 'react-bootstrap';
 import io from 'socket.io-client';
 import 'animate.css';
 
@@ -12,6 +12,7 @@ const socket = io();
 function Kiosk() {
   const [status, setStatus] = useState('initializing');
   const [fingerprint, setFingerprint] = useState('');
+  const [deviceName, setDeviceName] = useState('');
   const webcamRef = useRef(null);
   const [loading, setLoading] = useState(false);
   const [checkInMessage, setCheckInMessage] = useState({ variant: 'info', text: '', icon: '' });
@@ -48,11 +49,17 @@ function Kiosk() {
         const result = await fp.get();
         const deviceFingerprint = result.visitorId;
         setFingerprint(deviceFingerprint);
+        
         const response = await axios.post('/api/devices/verify', { fingerprint: deviceFingerprint });
-        setStatus(response.data.isAuthorized ? 'approved' : (response.data.status || 'pending'));
+        
+        setStatus(response.data.status);
       } catch (error) {
-        console.error('Error verificando el dispositivo:', error);
-        setStatus('error');
+        if (error.response && error.response.status === 404) {
+          setStatus('naming');
+        } else {
+          console.error('Error verificando el dispositivo:', error);
+          setStatus('error');
+        }
       }
     };
     getFingerprintAndVerify();
@@ -61,6 +68,25 @@ function Kiosk() {
     return () => clearInterval(timerId); 
 
   }, []);
+
+  const handleNameSubmit = async (e) => {
+    e.preventDefault();
+    if (!deviceName) return;
+
+    setLoading(true);
+    try {
+      await axios.post('/api/devices/register', {
+        fingerprint: fingerprint,
+        nombre: deviceName
+      });
+      setStatus('pending');
+    } catch (error) {
+      console.error("Error al registrar el nombre:", error);
+      setStatus('error');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const formatDateTime = (date) => {
     const optionsDate = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
@@ -78,8 +104,8 @@ function Kiosk() {
       <Card.Body className="p-5">
         <i className={`bi ${icon} display-3 mb-4 text-${color}`}></i>
         <Card.Title as="h2" className="mb-3 fw-bold">{title}</Card.Title>
-        <Card.Text className="text-muted fs-5">{text}</Card.Text>
-        {code && <p className="mt-4 bg-secondary bg-opacity-10 p-3 rounded text-muted font-monospace"><small>Código: {code}</small></p>}
+        <Card.Text className="text-white-50 fs-5">{text}</Card.Text>
+        {code && <p className="mt-4 bg-secondary bg-opacity-10 p-3 rounded text-white-50 font-monospace"><small>Código: {code}</small></p>}
       </Card.Body>
     </Card>
   );
@@ -138,17 +164,46 @@ function Kiosk() {
       </Card.Body>
     </Card>
   );
+  
+  const renderNamingForm = () => (
+    <Card bg="dark" text="white" className="text-center shadow-lg border-0 mx-auto animate__animated animate__fadeIn" style={{ maxWidth: '480px', borderRadius: '1rem' }}>
+      <Card.Body className="p-5">
+        <i className="bi bi-input-cursor-text display-3 mb-4 text-primary"></i>
+        <Card.Title as="h2" className="mb-3 fw-bold">Dispositivo Nuevo</Card.Title>
+        <Card.Text className="text-white-50 fs-5">
+          Asigna un nombre a este dispositivo (ej. "TABLET ENTRADA" o "MAQUINA 1").
+        </Card.Text>
+        <Form onSubmit={handleNameSubmit} className="mt-4" data-bs-theme="dark">
+          <Form.Group>
+            <Form.Control 
+              type="text" 
+              placeholder="Nombre del dispositivo"
+              value={deviceName}
+              onChange={(e) => setDeviceName(e.target.value.toUpperCase())}
+              required
+              className="text-center fs-5"
+            />
+          </Form.Group>
+          <Button type="submit" variant="primary" className="w-100 mt-3" disabled={loading}>
+            {loading ? <Spinner animation="border" size="sm" /> : 'Solicitar Aprobación'}
+          </Button>
+        </Form>
+      </Card.Body>
+    </Card>
+  );
 
   const renderContent = () => {
     switch (status) {
       case 'initializing':
-        return renderStatus('bi-arrow-repeat', 'primary', 'Inicializando', 'Identificando dispositivo...');
+        return renderStatus('bi-arrow-repeat', 'primary', 'Inicializando...', 'Contactando al servidor...');
+      case 'naming':
+        return renderNamingForm();
       case 'pending':
-        return renderStatus('bi-hourglass-split', 'warning', 'Dispositivo Pendiente', 'Un administrador debe autorizar este equipo.', fingerprint);
+        return renderStatus('bi-hourglass-split', 'warning', 'Solicitud Enviada', 'Un administrador debe autorizar este equipo.', fingerprint);
       case 'approved':
         return renderApproved();
       case 'rejected':
-        return renderStatus('bi-x-octagon-fill', 'danger', 'Dispositivo Rechazado', 'Este equipo no tiene permiso.');
+        return renderStatus('bi-x-octagon-fill', 'danger', 'Solicitud Rechazada', 'Este equipo no tiene permiso.');
       default: 
         return renderStatus('bi-wifi-off', 'danger', 'Error de Conexión', 'No se pudo verificar el estado.');
     }
@@ -168,3 +223,4 @@ function Kiosk() {
 }
 
 export default Kiosk;
+

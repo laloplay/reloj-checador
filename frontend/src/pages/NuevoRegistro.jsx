@@ -1,4 +1,3 @@
-// frontend/src/pages/NuevoRegistro.jsx
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import axios from 'axios';
 import Webcam from 'react-webcam';
@@ -43,15 +42,72 @@ function NuevoRegistro() {
     };
     fetchData();
   }, []);
-  
-  // --- Lógica de handlers (sin cambios) ---
-  const handlePuestoChange = (e) => { /* ... (sin cambios) ... */ };
-  const handleBonoChange = (e) => { /* ... (sin cambios) ... */ };
-  const capturePhoto = useCallback(() => { /* ... (sin cambios) ... */ }, [webcamRef]);
-  const handleRegisterEmployee = async (e) => { /* ... (lógica sin cambios) ... */ };
+
+  const handlePuestoChange = (e) => {
+    const selectedPuestoId = e.target.value;
+    setPuestoId(selectedPuestoId);
+    const selectedPuesto = listaPuestos.find(p => p.id === parseInt(selectedPuestoId));
+    setSalario(selectedPuesto ? selectedPuesto.salarioDiario : 0);
+  };
+
+  const handleBonoChange = (e) => {
+    const selectedBonoId = e.target.value;
+    setBonoId(selectedBonoId);
+    const selectedBono = listaBonos.find(b => b.id === parseInt(selectedBonoId));
+    setBono(selectedBono ? selectedBono.monto : 0);
+  };
+
+  const capturePhoto = useCallback(() => {
+    const imageSrc = webcamRef.current.getScreenshot();
+    setCapturedImage(imageSrc);
+  }, [webcamRef]);
+
+  const handleRegisterEmployee = async (e) => {
+    e.preventDefault();
+    if (!nombre || !capturedImage) {
+      setMessage({ type: 'warning', text: 'El nombre y la foto son obligatorios.' });
+      return;
+    }
+    setIsRegistering(true);
+    setMessage({ type: 'info', text: 'Registrando empleado...' });
+
+    try {
+      const puestoSeleccionado = listaPuestos.find(p => p.id === parseInt(puestoId))?.nombre || '';
+      
+      const employeeData = { 
+        nombre: nombre.toUpperCase(), 
+        sucursal, 
+        puesto: puestoSeleccionado,
+        salario, 
+        bono, 
+        fechaIngreso, 
+        horaEntrada, 
+        horaSalida 
+      };
+
+      const employeeResponse = await axios.post('/api/employees', employeeData);
+      const employeeId = employeeResponse.data.id;
+      
+      setMessage({ type: 'info', text: `Empleado creado (ID: ${employeeId}). Registrando rostro...` });
+      
+      await axios.post(`/api/employees/${employeeId}/register-face`, {
+        image: capturedImage,
+      });
+
+      setMessage({ type: 'success', text: `¡Empleado ${nombre.toUpperCase()} registrado con éxito!` });
+      setNombre(''); setSucursal(''); setPuestoId(''); setSalario(0);
+      setBonoId(''); setBono(0); setFechaIngreso(''); setHoraEntrada('');
+      setHoraSalida(''); setCapturedImage(null);
+
+    } catch (error) {
+      console.error('Error en el registro:', error);
+      setMessage({ type: 'danger', text: `Hubo un error: ${error.response?.data?.error || error.message}` });
+    } finally {
+      setIsRegistering(false);
+    }
+  };
 
   return (
-    // IMPORTANTE: data-bs-theme="dark" para que los formularios se vean bien
     <div className="animate__animated animate__fadeIn" data-bs-theme="dark"> 
       <header className="d-flex justify-content-between align-items-center pb-3 mb-4 border-bottom border-secondary">
         <h1 className="h3 text-white-50">Nuevo Registro de Empleado</h1>
