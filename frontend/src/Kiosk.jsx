@@ -1,4 +1,3 @@
-// frontend/src/Kiosk.jsx
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import axios from 'axios';
 import FingerprintJS from '@fingerprintjs/fingerprintjs';
@@ -15,49 +14,33 @@ function Kiosk() {
   const [fingerprint, setFingerprint] = useState('');
   const webcamRef = useRef(null);
   const [loading, setLoading] = useState(false);
-  const [checkInMessage, setCheckInMessage] = useState({ type: '', text: '' });
+  const [checkInMessage, setCheckInMessage] = useState({ variant: 'info', text: '', icon: '' });
   const [dateTime, setDateTime] = useState(new Date());
 
-  // --- Lógica de Captura (¡AQUÍ ESTÁ EL ARREGLO!) ---
   const capture = useCallback(async () => {
     setLoading(true);
-    setCheckInMessage({ type: '', text: '' });
+    setCheckInMessage({ variant: 'info', text: '', icon: '' });
     const imageSrc = webcamRef.current?.getScreenshot();
 
     if (!imageSrc) {
-      setCheckInMessage({ type: 'warning', text: '⚠️ No se pudo capturar la imagen.' });
-      setLoading(false); // Detenemos la carga si no hay foto
+      setCheckInMessage({ variant: 'warning', text: 'No se pudo capturar la imagen.', icon: 'bi-exclamation-triangle-fill' });
+      setLoading(false);
       return;
     }
-
     try {
-      // 1. Hacemos la llamada a la API
-      const response = await axios.post('/api/attendance/check-in', { 
-        image: imageSrc,
-        fingerprint: fingerprint 
-      });
-
-      // 2. ¡LÓGICA DE ÉXITO QUE FALTABA!
-      // Usamos el 'employeeName' que nos envía el backend.
+      const response = await axios.post('/api/attendance/check-in', { image: imageSrc, fingerprint: fingerprint });
       const employeeName = response.data.employeeName || 'Empleado';
-      setCheckInMessage({ type: 'success', text: `✅ ¡Bienvenido, ${employeeName}!` });
-
+      setCheckInMessage({ variant: 'success', text: `¡Bienvenido, ${employeeName}!`, icon: 'bi-check-circle-fill' });
     } catch (error) {
-      // 3. LÓGICA DE ERROR
       console.error('Error en el check-in:', error);
-      const errorMsg = error.response?.data?.message || 'Error de conexión al verificar.';
-      setCheckInMessage({ type: 'danger', text: `❌ ${errorMsg}` });
-
+      const errorMsg = error.response?.data?.message || 'Error de conexión.';
+      setCheckInMessage({ variant: 'danger', text: errorMsg, icon: 'bi-x-circle-fill' });
     } finally {
-      // 4. ¡LÓGICA 'FINALLY' QUE FALTABA!
-      // Esto se ejecuta SIEMPRE, ya sea éxito o error.
-      setLoading(false); // Detenemos el spinner
-      // Limpia el mensaje después de 7 segundos
-      setTimeout(() => setCheckInMessage({ type: '', text: '' }), 7000);
+      setLoading(false);
+      setTimeout(() => setCheckInMessage({ variant: 'info', text: '', icon: '' }), 7000);
     }
-  }, [webcamRef, fingerprint]); // <-- fingerprint está incluido, ¡perfecto!
+  }, [webcamRef, fingerprint]);
 
-  // --- Lógica de Verificación del Dispositivo (sin cambios) ---
   useEffect(() => {
     const getFingerprintAndVerify = async () => {
        try {
@@ -79,7 +62,6 @@ function Kiosk() {
 
   }, []);
 
-  // --- Función para formatear fecha y hora (sin cambios) ---
   const formatDateTime = (date) => {
     const optionsDate = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
     const optionsTime = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true, hourCycle: 'h12' };
@@ -91,25 +73,25 @@ function Kiosk() {
 
   const { date, time } = formatDateTime(dateTime);
 
-  // --- Renderizado del Contenido (sin cambios) ---
   const renderStatus = (icon, color, title, text, code = null) => (
-    <Card className="text-center shadow-lg border-0 mx-auto text-dark bg-white animate__animated animate__fadeIn" style={{ maxWidth: '480px', borderRadius: '1rem' }}>
+    <Card bg="dark" text="white" className="text-center shadow-lg border-0 mx-auto animate__animated animate__fadeIn" style={{ maxWidth: '480px', borderRadius: '1rem' }}>
       <Card.Body className="p-5">
         <i className={`bi ${icon} display-3 mb-4 text-${color}`}></i>
         <Card.Title as="h2" className="mb-3 fw-bold">{title}</Card.Title>
         <Card.Text className="text-muted fs-5">{text}</Card.Text>
-        {code && <p className="mt-4 bg-light p-3 rounded text-muted font-monospace"><small>Código: {code}</small></p>}
+        {code && <p className="mt-4 bg-secondary bg-opacity-10 p-3 rounded text-muted font-monospace"><small>Código: {code}</small></p>}
       </Card.Body>
     </Card>
   );
 
   const renderApproved = () => (
-    <Card className="shadow-lg border-0 col-11 col-md-10 col-lg-9 col-xl-8 mx-auto text-dark bg-white animate__animated animate__fadeIn" style={{ borderRadius: '1rem' }}>
+    <Card bg="dark" text="white" className="shadow-lg border-0 col-11 col-md-10 col-lg-9 col-xl-8 mx-auto animate__animated animate__fadeIn" style={{ borderRadius: '1rem', boxShadow: '0 10px 40px rgba(0,0,0,0.4)' }}>
       <Card.Body className="p-4 p-md-5">
         <div className="row g-4 g-lg-5 align-items-center">
+          
           <div className="col-md-6 text-center">
-             <h2 className="h4 mb-3 d-md-none text-secondary fw-light">Reloj Checador</h2>
-            <div className="ratio ratio-4x3 rounded-4 overflow-hidden shadow-inner bg-dark mx-auto">
+             <h2 className="h4 mb-3 d-md-none text-muted fw-light">Reloj Checador</h2>
+            <div className="ratio ratio-4x3 rounded-4 overflow-hidden shadow-inner bg-black mx-auto">
               <Webcam
                 audio={false}
                 ref={webcamRef}
@@ -120,15 +102,16 @@ function Kiosk() {
               />
             </div>
           </div>
+          
           <div className="col-md-6 text-center">
-            <h1 className="h5 text-secondary fw-light mb-3 d-none d-md-block">Control de Asistencia</h1>
-            <p className="lead fs-6 mb-1 text-dark">{date}</p>
+            <h1 className="h5 text-muted fw-light mb-3 d-none d-md-block">Control de Asistencia</h1>
+            <p className="lead fs-6 mb-1 text-white-50">{date}</p>
             <p className="display-5 fw-bold text-primary mb-4">{time}</p>
             
             <Button
-              variant="outline-primary"
+              variant="primary"
               size="lg"
-              className="w-100 d-flex align-items-center justify-content-center py-2 py-md-3 fs-6 fs-md-5 shadow-sm rounded-pill"
+              className="w-100 d-flex align-items-center justify-content-center py-3 fs-5 shadow-sm rounded-pill"
               onClick={capture}
               disabled={loading}
               style={{ transition: 'all 0.2s ease-in-out' }}
@@ -141,10 +124,12 @@ function Kiosk() {
                 <><i className="bi bi-camera-fill me-2 fs-4"></i> Registrar Asistencia</>
               )}
             </Button>
+            
             <div className="mt-3" style={{ minHeight: '60px' }}>
               {checkInMessage.text && (
-                <Alert variant={checkInMessage.type} className="py-2 mb-0 small rounded-pill animate__animated animate__fadeInUp">
-                  {checkInMessage.text}
+                <Alert variant={checkInMessage.variant} className="py-2 mb-0 small rounded-pill d-flex align-items-center justify-content-center animate__animated animate__fadeInUp">
+                  <i className={`bi ${checkInMessage.icon} me-2 fs-5`}></i>
+                  <span className="fw-bold">{checkInMessage.text}</span>
                 </Alert>
               )}
             </div>
@@ -169,13 +154,12 @@ function Kiosk() {
     }
   };
 
-  // --- Estructura Principal del Componente (sin cambios) ---
   return (
-    <div className="min-vh-100 d-flex flex-column align-items-center justify-content-center p-3" style={{ background: '#212529' }}>
+    <div className="min-vh-100 d-flex flex-column align-items-center justify-content-center p-3" style={{ background: 'radial-gradient(circle at center, #2c3e50 0%, #1a202c 100%)' }}>
       {renderContent()}
       
       <footer className="mt-4 text-center">
-         <Link to="/login-admin" className="text-white-50 text-decoration-none fw-light" style={{ fontSize: '0.8rem', opacity: 0.7, transition: 'opacity 0.3s ease' }} onMouseOver={e => e.currentTarget.style.opacity = 1} onMouseOut={e => e.currentTarget.style.opacity = 0.7}>
+         <Link to="/login-admin" className="text-white-50 text-decoration-none fw-light" style={{ fontSize: '0.8rem', opacity: 0.5, transition: 'opacity 0.3s ease' }} onMouseOver={e => e.currentTarget.style.opacity = 1} onMouseOut={e => e.currentTarget.style.opacity = 0.5}>
            © {new Date().getFullYear()} UnifamCheck
          </Link>
       </footer>
