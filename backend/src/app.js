@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const { Op } = require('sequelize');
 const Usuario = require('./models/Usuario');
 const Dispositivo = require('./models/Dispositivo');
 const Empleado = require('./models/Empleado');
@@ -13,6 +14,7 @@ const DiaFestivo = require('./models/DiaFestivo');
 const DiaDescanso = require('./models/DiaDescanso');
 const Vacacion = require('./models/Vacacion');
 const Permiso = require('./models/Permiso');
+const MotivoPermiso = require('./models/MotivoPermiso');
 const { RekognitionClient, IndexFacesCommand, SearchFacesByImageCommand, DeleteFacesCommand } = require("@aws-sdk/client-rekognition");
 
 Dispositivo.belongsTo(Sucursal, { foreignKey: 'sucursalId' });
@@ -25,6 +27,8 @@ Empleado.hasMany(Vacacion, { foreignKey: 'employeeId' });
 Vacacion.belongsTo(Empleado, { foreignKey: 'employeeId' });
 Empleado.hasMany(Permiso, { foreignKey: 'employeeId' });
 Permiso.belongsTo(Empleado, { foreignKey: 'employeeId' });
+Permiso.belongsTo(MotivoPermiso, { foreignKey: 'motivoId' });
+MotivoPermiso.hasMany(Permiso, { foreignKey: 'motivoId' });
 
 const app = express();
 app.use(cors());
@@ -43,9 +47,17 @@ app.post('/api/devices/verify', async (req, res) => {
   try {
     const { fingerprint } = req.body;
     if (!fingerprint) return res.status(400).json({ error: 'fingerprint es requerido' });
-    const device = await Dispositivo.findOne({ where: { fingerprint: fingerprint } });
+    const device = await Dispositivo.findOne({ 
+      where: { fingerprint: fingerprint },
+      include: { model: Sucursal, attributes: ['nombre'] }
+    });
     if (device) {
-      res.json({ isAuthorized: device.status === 'approved', status: device.status, deviceId: device.id });
+      res.json({ 
+        isAuthorized: device.status === 'approved', 
+        status: device.status, 
+        deviceId: device.id,
+        sucursalNombre: device.Sucursal?.nombre
+      });
     } else {
       res.status(404).json({ status: 'new' });
     }
@@ -202,10 +214,68 @@ app.post('/api/employees/:employeeId/register-face', async (req, res) => {
   }
 });
 
+app.get('/api/employees', async (req, res) => {
+  try {
+    const { sucursal } = req.query;
+    let whereClause = {};
+    if (sucursal && sucursal !== 'TODAS') {
+      whereClause.sucursal = sucursal;
+    }
+    
+    const employees = await Empleado.findAll({ 
+      where: whereClause,
+      order: [['nombre', 'ASC']] 
+    });
+    res.json(employees);
+  } catch (error) {
+    console.error("Error obteniendo empleados:", error);
+    res.status(500).json({ error: 'Error al obtener empleados.' });
+  }
+});
+
+app.put('/api/employees/:id', async (req, res) => {
+  try {
+    const employee = await Empleado.findByPk(req.params.id);
+    if (!employee) {
+      return res.status(404).json({ error: 'Empleado no encontrado' });
+    }
+    await employee.update(req.body);
+    res.json(employee);
+  } catch (error) {
+    console.error("Error actualizando empleado:", error);
+    res.status(500).json({ error: 'Error al actualizar empleado.' });
+  }
+});
+
+app.delete('/api/employees/:id', async (req, res) => {
+  try {
+    const employee = await Empleado.findByPk(req.params.id);
+    if (!employee) {
+      return res.status(404).json({ error: 'Empleado no encontrado' });
+    }
+    
+    try {
+      const deleteCommand = new DeleteFacesCommand({
+        CollectionId: COLLECTION_ID,
+        FaceIds: [employee.id.toString()]
+      });
+      await rekognitionClient.send(deleteCommand);
+    } catch (rekError) {
+      console.error("Error borrando cara de Rekognition (pero se continuará):", rekError);
+    }
+
+    await employee.destroy();
+    res.status(204).send();
+  } catch (error) {
+    console.error("Error borrando empleado:", error);
+    res.status(500).json({ error: 'Error al borrar empleado.' });
+  }
+});
+
 app.post('/api/attendance/check-in', async (req, res) => {
-  const { image, fingerprint } = req.body; 
-  if (!image || !fingerprint) {
-    return res.status(400).json({ error: "Datos incompletos (imagen o fingerprint)." });
+  const { image, fingerprint, type } = req.body; 
+  if (!image || !fingerprint || !type) {
+    return res.status(400).json({ error: "Datos incompletos (imagen, fingerprint o tipo)." });
   }
   const imageBuffer = Buffer.from(image.replace(/^data:image\/jpeg;base64,/, ""), 'base64');
   try {
@@ -244,12 +314,41 @@ app.post('/api/attendance/check-in', async (req, res) => {
         });
       }
 
+      const lastRegistration = await Registro.findOne({
+        where: { employeeId: employee.id },
+        order: [['timestamp', 'DESC']]
+      });
+
+      if (lastRegistration) {
+        if (lastRegistration.type === 'ENTRADA' && type === 'ENTRADA') {
+          return res.status(400).json({ success: false, message: 'Error: Ya registraste tu ENTRADA.' });
+        }
+        if (lastRegistration.type === 'SALIDA' && type === 'SALIDA') {
+          return res.status(400).json({ success: false, message: 'Error: Ya registraste tu SALIDA.' });
+        }
+      } else {
+        if (type === 'SALIDA') {
+          return res.status(400).json({ success: false, message: 'Error: No puedes registrar una SALIDA sin una ENTRADA previa.' });
+        }
+      }
+      
+      let statusRegistro = 'PUNTUAL';
+      if (type === 'ENTRADA' && employee.horaEntrada) {
+        const [he_horas, he_minutos] = employee.horaEntrada.split(':').map(Number);
+        const ahora = new Date();
+        const horaLimite = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate(), he_horas, he_minutos, 0);
+        
+        if (ahora > horaLimite) {
+          statusRegistro = 'RETARDO';
+        }
+      }
+
       await Registro.create({
         employeeId: parseInt(employeeId),
-        type: 'ENTRADA'
+        type: type
       });
       
-      res.json({ success: true, employeeName: employee.nombre });
+      res.json({ success: true, employeeName: employee.nombre, type: type, status: statusRegistro });
     } else {
       res.status(404).json({ success: false, message: 'Rostro no reconocido.' });
     }
@@ -316,11 +415,20 @@ app.delete('/api/sucursales/:id', async (req, res) => {
 });
 
 app.get('/api/bonos', async (req, res) => {
-  try { const data = await Bono.findAll({ order: [['nombre', 'ASC']] }); res.json(data); }
+  try { const data = await Bono.findAll({ order: [['nombre', 'ASC']] }); res.json(data); } 
   catch (error) { res.status(500).json({ error: 'Error al obtener bonos' }); }
 });
 app.post('/api/bonos', async (req, res) => {
-  try { const data = await Bono.create(req.body); res.status(201).json(data); } 
+  try { 
+    const { nombre, monto, tipo_condicion, valor_condicion } = req.body;
+    const data = await Bono.create({ 
+      nombre: nombre.toUpperCase(), 
+      monto, 
+      tipo_condicion: tipo_condicion || 'NINGUNO', 
+      valor_condicion: valor_condicion ? -Math.abs(parseInt(valor_condicion, 10)) : 0
+    }); 
+    res.status(201).json(data); 
+  } 
   catch (error) {
     if (error.name === 'SequelizeUniqueConstraintError') return res.status(400).json({ error: `El bono "${req.body.nombre}" ya existe.` });
     res.status(500).json({ error: 'Error al crear el bono.' }); 
@@ -330,7 +438,16 @@ app.put('/api/bonos/:id', async (req, res) => {
   try {
     const item = await Bono.findByPk(req.params.id);
     if (!item) return res.status(404).json({ error: 'Bono no encontrado' });
-    await item.update(req.body);
+    
+    const { nombre, monto, tipo_condicion, valor_condicion } = req.body;
+    const updatedData = {
+      nombre: nombre.toUpperCase(),
+      monto: parseFloat(monto),
+      tipo_condicion: tipo_condicion || 'NINGUNO',
+      valor_condicion: (tipo_condicion !== 'NINGUNO' && valor_condicion) ? -Math.abs(parseInt(valor_condicion, 10)) : 0
+    };
+    
+    await item.update(updatedData);
     res.json(item);
   } catch (error) { res.status(500).json({ error: 'Error al actualizar' }); }
 });
@@ -345,13 +462,156 @@ app.delete('/api/bonos/:id', async (req, res) => {
 
 app.get('/api/registros', async (req, res) => {
   try {
-    const registros = await Registro.findAll({
-      include: [{ model: Empleado, attributes: ['nombre'] }],
-      order: [['timestamp', 'DESC']]
+    const { employeeId, startDate, endDate } = req.query;
+
+    if (!employeeId || !startDate || !endDate) {
+      return res.status(400).json({ error: 'Faltan parámetros (empleado, fecha inicio o fecha fin).' });
+    }
+
+    const [empleado, registros, diasFestivos, vacaciones, permisos] = await Promise.all([
+      Empleado.findByPk(employeeId, {
+        include: [{ model: DiaDescanso, attributes: ['dia_semana'] }]
+      }),
+      Registro.findAll({
+        where: {
+          employeeId: employeeId,
+          timestamp: { [Op.between]: [new Date(startDate), new Date(new Date(endDate).getTime() + 86400000)] } 
+        },
+        order: [['timestamp', 'ASC']]
+      }),
+      DiaFestivo.findAll({
+        where: { fecha: { [Op.between]: [startDate, endDate] } }
+      }),
+      Vacacion.findAll({
+        where: {
+          employeeId: employeeId,
+          fecha_inicio: { [Op.lte]: endDate },
+          fecha_fin: { [Op.gte]: startDate }
+        }
+      }),
+      Permiso.findAll({
+        where: {
+          employeeId: employeeId,
+          fecha_inicio: { [Op.lte]: endDate },
+          fecha_fin: { [Op.gte]: startDate }
+        },
+        include: [{ model: MotivoPermiso, attributes: ['nombre'] }]
+      })
+    ]);
+
+    if (!empleado) {
+      return res.status(404).json({ error: 'Empleado no encontrado.' });
+    }
+
+    const diasDescansoSet = new Set(empleado.DiaDescansos.map(d => d.dia_semana));
+    const diasFestivosSet = new Set(diasFestivos.map(d => d.fecha));
+    
+    const registrosMap = new Map();
+    for (const reg of registros) {
+      const fecha = new Date(reg.timestamp).toISOString().split('T')[0];
+      const hora = new Date(reg.timestamp).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
+      
+      if (!registrosMap.has(fecha)) {
+        registrosMap.set(fecha, {});
+      }
+      
+      const diaRegistros = registrosMap.get(fecha);
+      if (reg.type === 'ENTRADA' && !diaRegistros.entrada) {
+        diaRegistros.entrada = hora;
+      } else if (reg.type === 'SALIDA') {
+        diaRegistros.salida = hora;
+      }
+    }
+
+    const reporte = [];
+    const fechaInicio = new Date(`${startDate}T12:00:00Z`);
+    const fechaFin = new Date(`${endDate}T12:00:00Z`);
+
+    for (let d = new Date(fechaInicio); d <= fechaFin; d.setUTCDate(d.getUTCDate() + 1)) {
+      const fechaActualISO = d.toISOString().split('T')[0];
+      const diaSemana = d.getUTCDay();
+      
+      let diaReporte = {
+        fecha: fechaActualISO,
+        status: 'FALTA',
+        entrada: '--',
+        salida: '--'
+      };
+
+      if (diasFestivosSet.has(fechaActualISO)) {
+        diaReporte.status = 'FEST';
+      }
+      else if (diasDescansoSet.has(diaSemana)) {
+        diaReporte.status = 'DESC';
+      }
+      else if (vacaciones.some(v => fechaActualISO >= v.fecha_inicio && fechaActualISO <= v.fecha_fin)) {
+        diaReporte.status = 'VAC';
+      }
+      else {
+        const permisoHoy = permisos.find(p => fechaActualISO >= p.fecha_inicio && fechaActualISO <= p.fecha_fin);
+        if (permisoHoy) {
+          diaReporte.status = permisoHoy.MotivoPermiso ? permisoHoy.MotivoPermiso.nombre.substring(0, 4).toUpperCase() : 'PERM';
+        }
+      }
+
+      if (diaReporte.status === 'FALTA') {
+        const registroDelDia = registrosMap.get(fechaActualISO);
+        if (registroDelDia && registroDelDia.entrada) {
+          diaReporte.status = 'OK';
+          diaReporte.entrada = registroDelDia.entrada;
+          diaReporte.salida = registroDelDia.salida || '--';
+        }
+      }
+      
+      reporte.push(diaReporte);
+    }
+
+    res.json({ empleado, reporte });
+
+  } catch (error) {
+    console.error("Error generando reporte:", error);
+    res.status(500).json({ error: 'Error al generar el reporte.' });
+  }
+});
+
+app.get('/api/registros-sucursal', async (req, res) => {
+  try {
+    const { sucursal } = req.query;
+    if (!sucursal) {
+      return res.status(400).json({ error: 'Se requiere el nombre de la sucursal.' });
+    }
+
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date();
+    endOfDay.setHours(23, 59, 59, 999);
+
+    const empleados = await Empleado.findAll({ 
+      where: { sucursal: sucursal }, 
+      attributes: ['id'] 
     });
+
+    if (empleados.length === 0) {
+      return res.json([]);
+    }
+
+    const employeeIds = empleados.map(e => e.id);
+
+    const registros = await Registro.findAll({ 
+      where: { 
+        employeeId: { [Op.in]: employeeIds },
+        timestamp: { [Op.between]: [startOfDay, endOfDay] }
+      }, 
+      include: { 
+        model: Empleado, 
+        attributes: ['nombre'] 
+      }, 
+      order: [['timestamp', 'DESC']] 
+    });
+    
     res.json(registros);
   } catch (error) {
-    console.error("Error obteniendo registros:", error);
+    console.error("Error obteniendo registros de sucursal:", error);
     res.status(500).json({ error: 'Error al obtener los registros.' });
   }
 });
@@ -372,7 +632,7 @@ app.post('/api/auth/register', async (req, res) => {
 app.post('/api/auth/login', async (req, res) => {
   try {
     const { username, password } = req.body;
-    const user = await Usuario.findOne({ where: { username } });
+    const user = await Usuario.findOne({ where: { username: username.toLowerCase() } });
     if (!user) return res.status(404).json({ error: 'Usuario no encontrado.' });
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(400).json({ error: 'Contraseña incorrecta.' });
@@ -385,55 +645,6 @@ app.post('/api/auth/login', async (req, res) => {
   } catch (error) {
     console.error("Error en login:", error);
     res.status(500).json({ error: 'Error en el servidor durante el login.' });
-  }
-});
-
-app.get('/api/employees', async (req, res) => {
-  try {
-    const employees = await Empleado.findAll({ order: [['nombre', 'ASC']] });
-    res.json(employees);
-  } catch (error) {
-    console.error("Error obteniendo empleados:", error);
-    res.status(500).json({ error: 'Error al obtener empleados.' });
-  }
-});
-
-app.put('/api/employees/:id', async (req, res) => {
-  try {
-    const employee = await Empleado.findByPk(req.params.id);
-    if (!employee) {
-      return res.status(404).json({ error: 'Empleado no encontrado' });
-    }
-    await employee.update(req.body);
-    res.json(employee);
-  } catch (error) {
-    console.error("Error actualizando empleado:", error);
-    res.status(500).json({ error: 'Error al actualizar empleado.' });
-  }
-});
-
-app.delete('/api/employees/:id', async (req, res) => {
-  try {
-    const employee = await Empleado.findByPk(req.params.id);
-    if (!employee) {
-      return res.status(404).json({ error: 'Empleado no encontrado' });
-    }
-    
-    try {
-      const deleteCommand = new DeleteFacesCommand({
-        CollectionId: COLLECTION_ID,
-        FaceIds: [employee.id.toString()]
-      });
-      await rekognitionClient.send(deleteCommand);
-    } catch (rekError) {
-      console.error("Error borrando cara de Rekognition (pero se continuará):", rekError);
-    }
-
-    await employee.destroy();
-    res.status(204).send();
-  } catch (error) {
-    console.error("Error borrando empleado:", error);
-    res.status(500).json({ error: 'Error al borrar empleado.' });
   }
 });
 
@@ -474,10 +685,9 @@ app.get('/api/dias-descanso', async (req, res) => {
   try {
     const { sucursal } = req.query;
     let whereClause = {};
-    if (sucursal) {
+    if (sucursal && sucursal !== 'TODAS') {
       whereClause.sucursal = sucursal;
     }
-
     const empleados = await Empleado.findAll({
       attributes: ['id', 'nombre', 'sucursal'],
       where: whereClause,
@@ -497,7 +707,6 @@ app.get('/api/dias-descanso', async (req, res) => {
 app.post('/api/dias-descanso/toggle', async (req, res) => {
   try {
     const { employeeId, dia_semana, isChecked } = req.body;
-
     if (isChecked) {
       await DiaDescanso.findOrCreate({
         where: { 
@@ -518,6 +727,178 @@ app.post('/api/dias-descanso/toggle', async (req, res) => {
   } catch (error) {
     console.error("Error guardando día de descanso:", error);
     res.status(500).json({ error: 'Error al guardar.' });
+  }
+});
+
+app.get('/api/vacaciones', async (req, res) => {
+  try {
+    const { sucursal } = req.query;
+    let includeWhere = {};
+    if (sucursal && sucursal !== 'TODAS') {
+      includeWhere.sucursal = sucursal;
+    }
+    const vacaciones = await Vacacion.findAll({
+      include: [{
+        model: Empleado,
+        attributes: ['nombre', 'sucursal'],
+        where: includeWhere
+      }],
+      order: [['fecha_inicio', 'DESC']]
+    });
+    res.json(vacaciones);
+  } catch (error) {
+    console.error("Error obteniendo vacaciones:", error);
+    res.status(500).json({ error: 'Error al obtener los datos.' });
+  }
+});
+
+app.post('/api/vacaciones', async (req, res) => {
+  try {
+    const { employeeId, fecha_inicio, fecha_fin } = req.body;
+    if (!employeeId || !fecha_inicio || !fecha_fin) {
+      return res.status(400).json({ error: 'Todos los campos son requeridos.' });
+    }
+    const nuevasVacaciones = await Vacacion.create({ employeeId, fecha_inicio, fecha_fin });
+    res.status(201).json(nuevasVacaciones);
+  } catch (error) {
+    console.error("Error guardando vacaciones:", error);
+    res.status(500).json({ error: 'Error al guardar.' });
+  }
+});
+
+app.delete('/api/vacaciones/:id', async (req, res) => {
+  try {
+    const item = await Vacacion.findByPk(req.params.id);
+    if (!item) return res.status(404).json({ error: 'Registro de vacación no encontrado.' });
+    await item.destroy();
+    res.status(204).send();
+  } catch (error) {
+    console.error("Error borrando vacación:", error);
+    res.status(500).json({ error: 'Error al borrar.' });
+  }
+});
+
+app.get('/api/motivos-permiso', async (req, res) => {
+  try {
+    const motivos = await MotivoPermiso.findAll({ order: [['nombre', 'ASC']] });
+    res.json(motivos);
+  } catch (error) {
+    res.status(500).json({ error: 'Error al obtener motivos.' });
+  }
+});
+
+app.post('/api/motivos-permiso', async (req, res) => {
+  try {
+    const { nombre } = req.body;
+    const nuevoMotivo = await MotivoPermiso.create({ nombre: nombre.toUpperCase() });
+    res.status(201).json(nuevoMotivo);
+  } catch (error) {
+    if (error.name === 'SequelizeUniqueConstraintError') {
+      return res.status(400).json({ error: 'Ese motivo ya existe.' });
+    }
+    res.status(500).json({ error: 'Error al crear el motivo.' });
+  }
+});
+
+app.delete('/api/motivos-permiso/:id', async (req, res) => {
+  try {
+    const item = await MotivoPermiso.findByPk(req.params.id);
+    if (!item) return res.status(404).json({ error: 'Motivo no encontrado.' });
+    await item.destroy();
+    res.status(204).send();
+  } catch (error) {
+    res.status(500).json({ error: 'Error al borrar el motivo.' });
+  }
+});
+
+app.get('/api/permisos', async (req, res) => {
+  try {
+    const { sucursal } = req.query;
+    let includeWhere = {};
+    if (sucursal && sucursal !== 'TODAS') {
+      includeWhere.sucursal = sucursal;
+    }
+    
+    const permisos = await Permiso.findAll({
+      include: [
+        {
+          model: Empleado,
+          attributes: ['nombre', 'sucursal'],
+          where: includeWhere
+        },
+        {
+          model: MotivoPermiso,
+          attributes: ['nombre']
+        }
+      ],
+      order: [['fecha_inicio', 'DESC']]
+    });
+    res.json(permisos);
+  } catch (error) {
+    console.error("Error obteniendo permisos:", error);
+    res.status(500).json({ error: 'Error al obtener los datos.' });
+  }
+});
+
+app.post('/api/permisos', async (req, res) => {
+  try {
+    const { employeeId, fecha_inicio, fecha_fin, motivoId } = req.body;
+    if (!employeeId || !fecha_inicio || !fecha_fin || !motivoId) {
+      return res.status(400).json({ error: 'Todos los campos son requeridos.' });
+    }
+    const nuevoPermiso = await Permiso.create({ employeeId, fecha_inicio, fecha_fin, motivoId });
+    res.status(201).json(nuevoPermiso);
+  } catch (error) {
+    console.error("Error guardando permiso:", error);
+    res.status(500).json({ error: 'Error al guardar.' });
+  }
+});
+
+app.delete('/api/permisos/:id', async (req, res) => {
+  try {
+    const item = await Permiso.findByPk(req.params.id);
+    if (!item) return res.status(404).json({ error: 'Registro de permiso no encontrado.' });
+    await item.destroy();
+    res.status(204).send();
+  } catch (error) {
+    console.error("Error borrando permiso:", error);
+    res.status(500).json({ error: 'Error al borrar.' });
+  }
+});
+
+app.get('/api/admin/users', async (req, res) => {
+  try {
+    const users = await Usuario.findAll({ 
+      attributes: ['id', 'username', 'role'],
+      order: [['username', 'ASC']] 
+    });
+    res.json(users);
+  } catch (error) {
+    console.error("Error obteniendo administradores:", error);
+    res.status(500).json({ error: 'Error al obtener administradores.' });
+  }
+});
+
+app.delete('/api/admin/users/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userToDelete = await Usuario.findByPk(id);
+    
+    if (!userToDelete) {
+      return res.status(404).json({ error: 'Usuario no encontrado.' });
+    }
+
+    const adminCount = await Usuario.count({ where: { role: 'admin' } });
+
+    if (adminCount <= 1) {
+      return res.status(400).json({ error: 'No se puede eliminar al último administrador.' });
+    }
+
+    await userToDelete.destroy();
+    res.status(204).send();
+  } catch (error) {
+    console.error("Error borrando administrador:", error);
+    res.status(500).json({ error: 'Error al borrar administrador.' });
   }
 });
 

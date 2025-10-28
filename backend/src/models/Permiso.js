@@ -1,6 +1,7 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../db');
 const Empleado = require('./Empleado');
+const MotivoPermiso = require('./MotivoPermiso');
 
 const Permiso = sequelize.define('Permiso', {
   id: {
@@ -16,13 +17,21 @@ const Permiso = sequelize.define('Permiso', {
       key: 'id'
     }
   },
-  fecha: {
+  fecha_inicio: {
     type: DataTypes.DATEONLY,
     allowNull: false,
   },
-  motivo: {
-    type: DataTypes.STRING,
-    allowNull: true, // El motivo es opcional
+  fecha_fin: {
+    type: DataTypes.DATEONLY,
+    allowNull: false,
+  },
+  motivoId: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    references: {
+      model: MotivoPermiso,
+      key: 'id'
+    }
   }
 });
 

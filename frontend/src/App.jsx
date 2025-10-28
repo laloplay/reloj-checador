@@ -14,9 +14,11 @@ import BonosAdmin from './pages/BonosAdmin';
 import DispositivosAdmin from './pages/DispositivosAdmin'; 
 import GestionEmpleados from './pages/GestionEmpleados';
 import RegistrosAdmin from './pages/RegistrosAdmin';
-import PaginaEnConstruccion from './pages/PaginaEnConstruccion';
 import DiasFestivosAdmin from './pages/DiasFestivosAdmin';
-import DiasDescansoAdmin from './pages/DiasDescansoAdmin'; // <-- NUEVA IMPORTACIÓN
+import DiasDescansoAdmin from './pages/DiasDescansoAdmin';
+import VacacionesAdmin from './pages/VacacionesAdmin';
+import PermisosAdmin from './pages/PermisosAdmin';
+import AdministradoresAdmin from './pages/AdministradoresAdmin'; // <-- NUEVA IMPORTACIÓN
 
 function AdminDashboard() {
   return (
@@ -53,12 +55,11 @@ function App() {
             <Route path="sucursales" element={<SucursalesAdmin />} />
             <Route path="bonos" element={<BonosAdmin />} />
             <Route path="dispositivos" element={<DispositivosAdmin />} />
-            
-            <Route path="dias-descanso" element={<DiasDescansoAdmin />} /> {/* <-- RUTA CORREGIDA */}
-            <Route path="vacaciones" element={<PaginaEnConstruccion titulo="Vacaciones" />} />
-            <Route path="permisos" element={<PaginaEnConstruccion titulo="Permisos" />} />
+            <Route path="dias-descanso" element={<DiasDescansoAdmin />} />
+            <Route path="vacaciones" element={<VacacionesAdmin />} />
+            <Route path="permisos" element={<PermisosAdmin />} />
             <Route path="dias-festivos" element={<DiasFestivosAdmin />} />
-            
+            <Route path="administradores" element={<AdministradoresAdmin />} /> {/* <-- NUEVA RUTA */}
           </Route>
         </Route>
       </Routes>

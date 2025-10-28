@@ -36,14 +36,12 @@ function AdminLayout() {
             Dashboard
           </Nav.Link>
         </Nav.Item>
-
         <Nav.Item as="li" className="nav-item mb-1">
           <Nav.Link as={Link} to="/admin/registros" className={getLinkClass('/admin/registros')} onClick={handleClose}>
             <i className="bi bi-clipboard2-data-fill me-2" style={{ color: '#0dcaf0' }}></i> 
             Registros
           </Nav.Link>
         </Nav.Item>
-
         <Nav.Item as="li" className="nav-item mb-1">
           <Nav.Link as={Link} to="/admin/dispositivos" className={getLinkClass('/admin/dispositivos')} onClick={handleClose}>
             <i className="bi bi-tablet-landscape-fill me-2" style={{ color: '#dc3545' }}></i>
@@ -60,28 +58,24 @@ function AdminLayout() {
             Nuevo Empleado
           </Nav.Link>
         </Nav.Item>
-
         <Nav.Item as="li" className="nav-item mb-1">
           <Nav.Link as={Link} to="/admin/gestionar-empleados" className={getLinkClass('/admin/gestionar-empleados')} onClick={handleClose}>
             <i className="bi bi-people-fill me-2" style={{ color: '#198754' }}></i> 
             Gestionar Empleados
           </Nav.Link>
         </Nav.Item>
-
         <Nav.Item as="li" className="nav-item mb-1">
           <Nav.Link as={Link} to="/admin/dias-descanso" className={getLinkClass('/admin/dias-descanso')} onClick={handleClose}>
             <i className="bi bi-calendar-x-fill me-2" style={{ color: '#ffc107' }}></i> 
             Días de Descanso
           </Nav.Link>
         </Nav.Item>
-
         <Nav.Item as="li" className="nav-item mb-1">
           <Nav.Link as={Link} to="/admin/vacaciones" className={getLinkClass('/admin/vacaciones')} onClick={handleClose}>
             <i className="bi bi-airplane-fill me-2" style={{ color: '#0dcaf0' }}></i> 
             Vacaciones
           </Nav.Link>
         </Nav.Item>
-
         <Nav.Item as="li" className="nav-item mb-1">
           <Nav.Link as={Link} to="/admin/permisos" className={getLinkClass('/admin/permisos')} onClick={handleClose}>
             <i className="bi bi-calendar-event-fill me-2" style={{ color: '#6f42c1' }}></i> 
@@ -98,14 +92,12 @@ function AdminLayout() {
             Días Festivos
           </Nav.Link>
         </Nav.Item>
-
         <Nav.Item as="li" className="nav-item mb-1">
           <Nav.Link as={Link} to="/admin/puestos" className={getLinkClass('/admin/puestos')} onClick={handleClose}>
             <i className="bi bi-briefcase-fill me-2" style={{ color: '#ffc107' }}></i> 
             Puestos y Salarios
           </Nav.Link>
         </Nav.Item>
-
         <Nav.Item as="li" className="nav-item mb-1">
           <Nav.Link as={Link} to="/admin/sucursales" className={getLinkClass('/admin/sucursales')} onClick={handleClose}>
             <i className="bi bi-shop me-2" style={{ color: '#fd7e14' }}></i> 
@@ -116,6 +108,12 @@ function AdminLayout() {
           <Nav.Link as={Link} to="/admin/bonos" className={getLinkClass('/admin/bonos')} onClick={handleClose}>
             <i className="bi bi-gift-fill me-2" style={{ color: '#6f42c1' }}></i> 
             Bonos
+          </Nav.Link>
+        </Nav.Item>
+        <Nav.Item as="li" className="mb-1">
+          <Nav.Link as={Link} to="/admin/administradores" className={getLinkClass('/admin/administradores')} onClick={handleClose}>
+            <i className="bi bi-person-badge-fill me-2" style={{ color: '#dc3545' }}></i> 
+            Administradores
           </Nav.Link>
         </Nav.Item>
       </Nav>

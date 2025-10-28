@@ -14,11 +14,11 @@ const DiaDescanso = sequelize.define('DiaDescanso', {
     references: {
       model: Empleado,
       key: 'id'
-    }
-    // unique: true <-- BORRAMOS ESTA LÍNEA
+    },
+    unique: true // Un empleado solo tiene una configuración de descanso
   },
   dia_semana: {
-    type: DataTypes.INTEGER, // 0 = Domingo, 1 = Lunes, etc.
+    type: DataTypes.INTEGER, // 0 = Domingo, 1 = Lunes, 2 = Martes, etc.
     allowNull: false,
   }
 }, {
