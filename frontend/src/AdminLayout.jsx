@@ -82,11 +82,23 @@ function AdminLayout() {
             Permisos
           </Nav.Link>
         </Nav.Item>
-
+        
         <hr className="my-2"/>
-        <span className="text-white-50 small text-uppercase">Configuración</span>
+        <span className="text-white-50 small text-uppercase">Nómina y Configuración</span>
 
         <Nav.Item as="li" className="nav-item mb-1 mt-2">
+          <Nav.Link as={Link} to="/admin/incidentes-nomina" className={getLinkClass('/admin/incidentes-nomina')} onClick={handleClose}>
+            <i className="bi bi-calculator-fill me-2" style={{ color: '#198754' }}></i> 
+            Percepciones/Deducciones
+          </Nav.Link>
+        </Nav.Item>
+        <Nav.Item as="li" className="nav-item mb-1">
+          <Nav.Link as={Link} to="/admin/nominas" className={getLinkClass('/admin/nominas')} onClick={handleClose}>
+            <i className="bi bi-receipt-cutoff me-2" style={{ color: '#0d6efd' }}></i> 
+            Nóminas
+          </Nav.Link>
+        </Nav.Item>
+        <Nav.Item as="li" className="nav-item mb-1">
           <Nav.Link as={Link} to="/admin/dias-festivos" className={getLinkClass('/admin/dias-festivos')} onClick={handleClose}>
             <i className="bi bi-calendar2-heart-fill me-2" style={{ color: '#fd7e14' }}></i> 
             Días Festivos

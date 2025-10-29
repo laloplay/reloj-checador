@@ -15,6 +15,10 @@ const DiaDescanso = require('./models/DiaDescanso');
 const Vacacion = require('./models/Vacacion');
 const Permiso = require('./models/Permiso');
 const MotivoPermiso = require('./models/MotivoPermiso');
+const Comision = require('./models/Comision');
+const Deduccion = require('./models/Deduccion');
+const NominaRun = require('./models/NominaRun');
+const NominaDetalle = require('./models/NominaDetalle');
 const { RekognitionClient, IndexFacesCommand, SearchFacesByImageCommand, DeleteFacesCommand } = require("@aws-sdk/client-rekognition");
 
 Dispositivo.belongsTo(Sucursal, { foreignKey: 'sucursalId' });
@@ -29,6 +33,13 @@ Empleado.hasMany(Permiso, { foreignKey: 'employeeId' });
 Permiso.belongsTo(Empleado, { foreignKey: 'employeeId' });
 Permiso.belongsTo(MotivoPermiso, { foreignKey: 'motivoId' });
 MotivoPermiso.hasMany(Permiso, { foreignKey: 'motivoId' });
+Empleado.hasMany(Comision, { foreignKey: 'employeeId' });
+Comision.belongsTo(Empleado, { foreignKey: 'employeeId' });
+Empleado.hasMany(Deduccion, { foreignKey: 'employeeId' });
+Deduccion.belongsTo(Empleado, { foreignKey: 'employeeId' });
+NominaRun.hasMany(NominaDetalle, { foreignKey: 'nominaRunId' });
+NominaDetalle.belongsTo(NominaRun, { foreignKey: 'nominaRunId' });
+NominaDetalle.belongsTo(Empleado, { foreignKey: 'employeeId' });
 
 const app = express();
 app.use(cors());
@@ -899,6 +910,180 @@ app.delete('/api/admin/users/:id', async (req, res) => {
   } catch (error) {
     console.error("Error borrando administrador:", error);
     res.status(500).json({ error: 'Error al borrar administrador.' });
+  }
+});
+
+app.get('/api/incidencias/comisiones', async (req, res) => {
+  try {
+    const data = await Comision.findAll({ include: [Empleado], order: [['fecha_pago', 'DESC']] });
+    res.json(data);
+  } catch (error) { res.status(500).json({ error: 'Error al obtener comisiones' }); }
+});
+app.post('/api/incidencias/comisiones', async (req, res) => {
+  try {
+    const data = await Comision.create(req.body);
+    res.status(201).json(data);
+  } catch (error) { res.status(500).json({ error: 'Error al crear comisión' }); }
+});
+app.delete('/api/incidencias/comisiones/:id', async (req, res) => {
+  try {
+    await Comision.destroy({ where: { id: req.params.id } });
+    res.status(204).send();
+  } catch (error) { res.status(500).json({ error: 'Error al borrar comisión' }); }
+});
+
+app.get('/api/incidencias/deducciones', async (req, res) => {
+  try {
+    const data = await Deduccion.findAll({ include: [Empleado], order: [['fecha_pago', 'DESC']] });
+    res.json(data);
+  } catch (error) { res.status(500).json({ error: 'Error al obtener deducciones' }); }
+});
+app.post('/api/incidencias/deducciones', async (req, res) => {
+  try {
+    const data = await Deduccion.create(req.body);
+    res.status(201).json(data);
+  } catch (error) { res.status(500).json({ error: 'Error al crear deducción' }); }
+});
+app.delete('/api/incidencias/deducciones/:id', async (req, res) => {
+  try {
+    await Deduccion.destroy({ where: { id: req.params.id } });
+    res.status(204).send();
+  } catch (error) { res.status(500).json({ error: 'Error al borrar deducción' }); }
+});
+
+
+// --- RUTAS DE NÓMINA ---
+
+app.post('/api/nomina/calcular', async (req, res) => {
+  try {
+    const { fecha_inicio, fecha_fin } = req.body;
+    const startDate = new Date(fecha_inicio);
+    const endDate = new Date(fecha_fin);
+    
+    // 1. Obtener todos los datos necesarios en paralelo
+    const [empleados, registros, diasFestivos, vacaciones, permisos, bonosCondicionales, comisiones, deducciones] = await Promise.all([
+      Empleado.findAll({ include: [DiaDescanso] }),
+      Registro.findAll({ where: { timestamp: { [Op.between]: [startDate, new Date(endDate.getTime() + 86400000)] } } }),
+      DiaFestivo.findAll({ where: { fecha: { [Op.between]: [fecha_inicio, fecha_fin] } } }),
+      Vacacion.findAll({ where: { fecha_inicio: { [Op.lte]: fecha_fin }, fecha_fin: { [Op.gte]: fecha_inicio } } }),
+      Permiso.findAll({ where: { fecha_inicio: { [Op.lte]: fecha_fin }, fecha_fin: { [Op.gte]: fecha_inicio } } }),
+      Bono.findAll({ where: { tipo_condicion: { [Op.ne]: 'NINGUNO' } } }),
+      Comision.findAll({ where: { fecha_pago: { [Op.between]: [fecha_inicio, fecha_fin] } } }),
+      Deduccion.findAll({ where: { fecha_pago: { [Op.between]: [fecha_inicio, fecha_fin] } } })
+    ]);
+
+    const diasFestivosSet = new Set(diasFestivos.map(d => d.fecha));
+    const nominaCalculada = [];
+
+    // 2. Iterar por cada empleado y calcular su nómina
+    for (const emp of empleados) {
+      let dias_laborados = 0;
+      let bono_puntualidad = 0;
+
+      const diasDescansoSet = new Set(emp.DiaDescansos.map(d => d.dia_semana));
+      const registrosEmpleado = registros.filter(r => r.employeeId === emp.id);
+      
+      const [he_horas, he_minutos] = emp.horaEntrada.split(':').map(Number);
+      
+      for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+        const fechaActualISO = d.toISOString().split('T')[0];
+        const diaSemana = d.getDay();
+
+        const esFestivo = diasFestivosSet.has(fechaActualISO);
+        const esDescanso = diasDescansoSet.has(diaSemana);
+        const esVacacion = vacaciones.some(v => v.employeeId === emp.id && fechaActualISO >= v.fecha_inicio && fechaActualISO <= v.fecha_fin);
+        const esPermiso = permisos.some(p => p.employeeId === emp.id && fechaActualISO >= p.fecha_inicio && fechaActualISO <= p.fecha_fin);
+
+        const registrosHoy = registrosEmpleado.filter(r => new Date(r.timestamp).toISOString().split('T')[0] === fechaActualISO);
+        const entradaHoy = registrosHoy.find(r => r.type === 'ENTRADA');
+
+        let diaLaborado = false;
+        if (entradaHoy) {
+          diaLaborado = true;
+          dias_laborados++;
+        }
+
+        if (diaLaborado && !esFestivo && !esDescanso && !esVacacion && !esPermiso) {
+          const bonoPuntual = bonosCondicionales.find(b => b.tipo_condicion === 'PUNTUALIDAD' && b.nombre.toUpperCase().includes(emp.bono.toUpperCase()));
+          if (bonoPuntual) {
+            const horaEntrada = new Date(entradaHoy.timestamp);
+            const horaLimite = new Date(horaEntrada.getFullYear(), horaEntrada.getMonth(), horaEntrada.getDate(), he_horas, he_minutos, 0);
+            const minutosLlegada = (horaEntrada.getTime() - horaLimite.getTime()) / 60000;
+            
+            if (minutosLlegada <= bonoPuntual.valor_condicion) {
+              bono_puntualidad += bonoPuntual.monto;
+            }
+          }
+        }
+      }
+
+      const comisionesEmpleado = comisiones.filter(c => c.employeeId === emp.id).reduce((sum, c) => sum + c.monto, 0);
+      const deduccionesEmpleado = deducciones.filter(d => d.employeeId === emp.id).reduce((sum, d) => sum + d.monto, 0);
+
+      const sueldo = emp.salario * dias_laborados;
+      const total_percepciones = sueldo + bono_puntualidad + comisionesEmpleado;
+      const neto_a_pagar = total_percepciones - deduccionesEmpleado;
+
+      nominaCalculada.push({
+        employeeId: emp.id,
+        nombre: emp.nombre,
+        puesto: emp.puesto,
+        rfc: 'PECI750723M30', // Asumido
+        fecha_ingreso: new Date(emp.fechaIngreso).toLocaleDateString('es-MX'),
+        dias_laborados,
+        salario_diario: emp.salario,
+        sueldo,
+        bono_puntualidad,
+        comision: comisionesEmpleado,
+        total_percepciones,
+        otras_deducciones: deduccionesEmpleado,
+        neto_a_pagar
+      });
+    }
+
+    res.json(nominaCalculada);
+  } catch (error) {
+    console.error("Error calculando nómina:", error);
+    res.status(500).json({ error: 'Error al calcular la nómina.' });
+  }
+});
+
+app.get('/api/nomina/runs', async (req, res) => {
+  try {
+    const runs = await NominaRun.findAll({ order: [['fecha_fin', 'DESC']] });
+    res.json(runs);
+  } catch (error) { res.status(500).json({ error: 'Error al obtener nóminas guardadas.' }); }
+});
+
+app.get('/api/nomina/runs/:id', async (req, res) => {
+  try {
+    const run = await NominaRun.findByPk(req.params.id);
+    if (!run) return res.status(404).json({ error: 'Corrida no encontrada.' });
+    
+    const detalles = await NominaDetalle.findAll({ 
+      where: { nominaRunId: req.params.id }
+    });
+    res.json({ run, detalles });
+  } catch (error) { res.status(500).json({ error: 'Error al obtener detalles.' }); }
+});
+
+app.post('/api/nomina/guardar', async (req, res) => {
+  try {
+    const { nombre, fecha_inicio, fecha_fin, detalles } = req.body;
+    
+    const newRun = await NominaRun.create({ nombre, fecha_inicio, fecha_fin });
+    
+    const detallesConId = detalles.map(d => ({
+      ...d,
+      nominaRunId: newRun.id
+    }));
+    
+    await NominaDetalle.bulkCreate(detallesConId);
+    
+    res.status(201).json(newRun);
+  } catch (error) {
+    console.error("Error guardando nómina:", error);
+    res.status(500).json({ error: 'Error al guardar.' });
   }
 });
 

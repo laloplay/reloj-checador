@@ -25,7 +25,7 @@ io.on('connection', (socket) => {
 
 async function main() {
   try {
-    await sequelize.sync({ force: false });
+    await sequelize.sync({ force: false});
     console.log('Conexión a la base de datos establecida.');
 
     server.listen(PORT, () => {

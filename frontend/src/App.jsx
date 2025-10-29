@@ -18,7 +18,9 @@ import DiasFestivosAdmin from './pages/DiasFestivosAdmin';
 import DiasDescansoAdmin from './pages/DiasDescansoAdmin';
 import VacacionesAdmin from './pages/VacacionesAdmin';
 import PermisosAdmin from './pages/PermisosAdmin';
-import AdministradoresAdmin from './pages/AdministradoresAdmin'; // <-- NUEVA IMPORTACIÓN
+import AdministradoresAdmin from './pages/AdministradoresAdmin';
+import IncidentesNomina from './pages/IncidentesNomina'; // <-- NUEVA IMPORTACIÓN
+import NominasAdmin from './pages/NominasAdmin'; // <-- NUEVA IMPORTACIÓN
 
 function AdminDashboard() {
   return (
@@ -59,7 +61,9 @@ function App() {
             <Route path="vacaciones" element={<VacacionesAdmin />} />
             <Route path="permisos" element={<PermisosAdmin />} />
             <Route path="dias-festivos" element={<DiasFestivosAdmin />} />
-            <Route path="administradores" element={<AdministradoresAdmin />} /> {/* <-- NUEVA RUTA */}
+            <Route path="administradores" element={<AdministradoresAdmin />} />
+            <Route path="incidentes-nomina" element={<IncidentesNomina />} /> {/* <-- NUEVA RUTA */}
+            <Route path="nominas" element={<NominasAdmin />} /> {/* <-- NUEVA RUTA */}
           </Route>
         </Route>
       </Routes>
