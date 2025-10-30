@@ -2,12 +2,12 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import axios from 'axios';
 import FingerprintJS from '@fingerprintjs/fingerprintjs';
 import Webcam from 'react-webcam';
-import { Link } from 'react-router-dom'; 
+import { Link } from 'react-router-dom';
 import { Spinner, Alert, Card, Button, Form, Row, Col, Modal, Table } from 'react-bootstrap';
 import io from 'socket.io-client';
 import 'animate.css';
 
-const socket = io(); 
+const socket = io();
 
 const getToday = () => new Date().toISOString().split('T')[0];
 
@@ -47,12 +47,12 @@ function Kiosk() {
       return;
     }
     try {
-      const response = await axios.post('/api/attendance/check-in', { 
-        image: imageSrc, 
+      const response = await axios.post('/api/attendance/check-in', {
+        image: imageSrc,
         fingerprint: fingerprint,
-        type: type 
+        type: type
       });
-      
+
       const employeeName = response.data.employeeName || 'Empleado';
       const registrationType = response.data.type === 'ENTRADA' ? 'Entrada' : 'Salida';
       const statusRegistro = response.data.status;
@@ -75,14 +75,14 @@ function Kiosk() {
 
   useEffect(() => {
     const getFingerprintAndVerify = async () => {
-       try {
+      try {
         const fp = await FingerprintJS.load();
         const result = await fp.get();
         const deviceFingerprint = result.visitorId;
         setFingerprint(deviceFingerprint);
-        
+
         const response = await axios.post('/api/devices/verify', { fingerprint: deviceFingerprint });
-        
+
         setStatus(response.data.status);
         if (response.data.isAuthorized) {
           setSucursalNombre(response.data.sucursalNombre);
@@ -99,7 +99,7 @@ function Kiosk() {
     getFingerprintAndVerify();
 
     const timerId = setInterval(() => setDateTime(new Date()), 1000);
-    return () => clearInterval(timerId); 
+    return () => clearInterval(timerId);
 
   }, []);
 
@@ -129,8 +129,8 @@ function Kiosk() {
     setSelectedEmployeeId('');
     setEmpleadoSeleccionado(null);
     try {
-      const response = await axios.get('/api/employees', { 
-        params: { sucursal: sucursalNombre } 
+      const response = await axios.get('/api/employees', {
+        params: { sucursal: sucursalNombre }
       });
       setEmpleadosSucursal(response.data);
     } catch (error) {
@@ -141,7 +141,7 @@ function Kiosk() {
   };
 
   const handleGenerateReportKiosk = async (e) => {
-    if(e) e.preventDefault();
+    if (e) e.preventDefault();
     if (!selectedEmployeeId) {
       return;
     }
@@ -165,7 +165,7 @@ function Kiosk() {
       setLoadingReport(false);
     }
   };
-  
+
   useEffect(() => {
     if (showReportModal && selectedEmployeeId) {
       handleGenerateReportKiosk();
@@ -175,14 +175,14 @@ function Kiosk() {
   const formatFecha = (dateString) => {
     const date = new Date(dateString + 'T00:00:00');
     const options = {
-      weekday: 'short', 
-      day: '2-digit', 
-      month: '2-digit', 
+      weekday: 'short',
+      day: '2-digit',
+      month: '2-digit',
       year: '2-digit',
       timeZone: 'UTC'
     };
     let formatted = new Date(date).toLocaleDateString('es-MX', options);
-    return formatted.replace('.', '').replace(',', ''); 
+    return formatted.replace('.', '').replace(',', '');
   };
 
   const getStatusClass = (status) => {
@@ -216,9 +216,9 @@ function Kiosk() {
       <Card bg="dark" text="white" className="shadow-lg border-0 col-11 col-md-10 col-lg-9 col-xl-8 mx-auto animate__animated animate__fadeIn" style={{ borderRadius: '1rem', boxShadow: '0 10px 40px rgba(0,0,0,0.4)' }}>
         <Card.Body className="p-4 p-md-5">
           <div className="row g-4 g-lg-5 align-items-center">
-            
+
             <div className="col-md-6 text-center">
-               <h2 className="h4 mb-3 d-md-none text-muted fw-light">Reloj Checador</h2>
+              <h2 className="h4 mb-3 d-md-none text-muted fw-light">Reloj Checador</h2>
               <div className="ratio ratio-4x3 rounded-4 overflow-hidden shadow-inner bg-black mx-auto">
                 <Webcam
                   audio={false}
@@ -230,12 +230,12 @@ function Kiosk() {
                 />
               </div>
             </div>
-            
+
             <div className="col-md-6 text-center">
               <h1 className="h5 text-muted fw-light mb-3 d-none d-md-block">Control de Asistencia</h1>
               <p className="lead fs-6 mb-1 text-white-50">{date}</p>
               <p className="display-5 fw-bold text-primary mb-4">{time}</p>
-              
+
               <Row className="g-2">
                 <Col xs={6}>
                   <Button
@@ -270,7 +270,7 @@ function Kiosk() {
                   </Button>
                 </Col>
               </Row>
-              
+
               <div className="mt-3" style={{ minHeight: '60px' }}>
                 {checkInMessage.text && (
                   <Alert variant={checkInMessage.variant} className="py-2 mb-0 small rounded-pill d-flex align-items-center justify-content-center animate__animated animate__fadeInUp">
@@ -279,23 +279,31 @@ function Kiosk() {
                   </Alert>
                 )}
               </div>
-              
-              <Button 
-                variant="outline-secondary" 
-                size="sm" 
-                className="mt-3 rounded-pill" 
+
+              <Button
+                size="sm"
+                className="mt-3 rounded-pill fw-bold text-dark"
                 onClick={handleShowReport}
                 disabled={loading}
+                style={{
+                  backgroundColor: '#ffcc00', // Amarillo brillante tipo check engine
+                  border: 'none',
+                  boxShadow: '0 0 12px rgba(255, 204, 0, 0.6)',
+                  transition: 'all 0.2s ease-in-out'
+                }}
+                onMouseOver={e => e.currentTarget.style.backgroundColor = '#ffaa00'}
+                onMouseOut={e => e.currentTarget.style.backgroundColor = '#ffcc00'}
               >
                 <i className="bi bi-list-check me-2"></i>Ver Registros ({sucursalNombre})
               </Button>
+
             </div>
           </div>
         </Card.Body>
       </Card>
     );
   };
-  
+
   const renderNamingForm = () => (
     <Card bg="dark" text="white" className="text-center shadow-lg border-0 mx-auto animate__animated animate__fadeIn" style={{ maxWidth: '480px', borderRadius: '1rem' }}>
       <Card.Body className="p-5">
@@ -306,8 +314,8 @@ function Kiosk() {
         </Card.Text>
         <Form onSubmit={handleNameSubmit} className="mt-4" data-bs-theme="dark">
           <Form.Group>
-            <Form.Control 
-              type="text" 
+            <Form.Control
+              type="text"
               placeholder="Nombre del dispositivo"
               value={deviceName}
               onChange={(e) => setDeviceName(e.target.value.toUpperCase())}
@@ -335,7 +343,7 @@ function Kiosk() {
         return renderApproved();
       case 'rejected':
         return renderStatus('bi-x-octagon-fill', 'danger', 'Solicitud Rechazada', 'Este equipo no tiene permiso.');
-      default: 
+      default:
         return renderStatus('bi-wifi-off', 'danger', 'Error de Conexión', 'No se pudo verificar el estado.');
     }
   };
@@ -343,11 +351,11 @@ function Kiosk() {
   return (
     <div className="min-vh-100 d-flex flex-column align-items-center justify-content-center p-3" style={{ background: 'radial-gradient(circle at center, #2c3e50 0%, #1a202c 100%)' }}>
       {renderContent()}
-      
+
       <footer className="mt-4 text-center">
-         <Link to="/login-admin" className="text-white-50 text-decoration-none fw-light" style={{ fontSize: '0.8rem', opacity: 0.5, transition: 'opacity 0.3s ease' }} onMouseOver={e => e.currentTarget.style.opacity = 1} onMouseOut={e => e.currentTarget.style.opacity = 0.5}>
-           © {new Date().getFullYear()} UnifamCheck
-         </Link>
+        <Link to="/login-admin" className="text-white-50 text-decoration-none fw-light" style={{ fontSize: '0.8rem', opacity: 0.5, transition: 'opacity 0.3s ease' }} onMouseOver={e => e.currentTarget.style.opacity = 1} onMouseOut={e => e.currentTarget.style.opacity = 0.5}>
+          © {new Date().getFullYear()} UnifamCheck
+        </Link>
       </footer>
 
       <Modal show={showReportModal} onHide={() => setShowReportModal(false)} size="lg" centered data-bs-theme="dark">
@@ -357,7 +365,7 @@ function Kiosk() {
           </Modal.Title>
         </Modal.Header>
         <Modal.Body className="bg-dark text-white">
-          
+
           <Form onSubmit={handleGenerateReportKiosk}>
             <Row className="g-3 mb-3 no-print">
               <Col md={5}>
@@ -390,7 +398,7 @@ function Kiosk() {
               </Col>
             </Row>
           </Form>
-          
+
           {empleadoSeleccionado && reportData.length > 0 && (
             <div className="d-flex justify-content-between align-items-center my-3">
               <div>

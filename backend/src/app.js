@@ -306,7 +306,7 @@ app.post('/api/attendance/check-in', async (req, res) => {
       CollectionId: COLLECTION_ID,
       Image: { Bytes: imageBuffer },
       MaxFaces: 1,
-      FaceMatchThreshold: 98,
+      FaceMatchThreshold: 99.0,
     });
     const data = await rekognitionClient.send(command);
 
@@ -632,7 +632,7 @@ app.post('/api/auth/register', async (req, res) => {
     const { username, password } = req.body;
     if (!username || !password) return res.status(400).json({ error: 'Usuario y contraseña son requeridos.' });
     const hashedPassword = await bcrypt.hash(password, 10);
-    const newUser = await Usuario.create({ username, password: hashedPassword, role: 'admin' });
+    const newUser = await Usuario.create({ username: username.toLowerCase(), password: hashedPassword, role: 'admin' });
     res.status(201).json({ message: 'Administrador creado con éxito', userId: newUser.id });
   } catch (error) {
     if (error.name === 'SequelizeUniqueConstraintError') return res.status(400).json({ error: `El usuario "${req.body.username}" ya existe.` });
@@ -855,7 +855,7 @@ app.post('/api/permisos', async (req, res) => {
   try {
     const { employeeId, fecha_inicio, fecha_fin, motivoId } = req.body;
     if (!employeeId || !fecha_inicio || !fecha_fin || !motivoId) {
-      return res.status(400).json({ error: 'Todos los campos son requeridos.' });
+      return res.status(404).json({ error: 'Todos los campos son requeridos.' });
     }
     const nuevoPermiso = await Permiso.create({ employeeId, fecha_inicio, fecha_fin, motivoId });
     res.status(201).json(nuevoPermiso);
@@ -951,16 +951,12 @@ app.delete('/api/incidencias/deducciones/:id', async (req, res) => {
   } catch (error) { res.status(500).json({ error: 'Error al borrar deducción' }); }
 });
 
-
-// --- RUTAS DE NÓMINA ---
-
 app.post('/api/nomina/calcular', async (req, res) => {
   try {
     const { fecha_inicio, fecha_fin } = req.body;
     const startDate = new Date(fecha_inicio);
     const endDate = new Date(fecha_fin);
     
-    // 1. Obtener todos los datos necesarios en paralelo
     const [empleados, registros, diasFestivos, vacaciones, permisos, bonosCondicionales, comisiones, deducciones] = await Promise.all([
       Empleado.findAll({ include: [DiaDescanso] }),
       Registro.findAll({ where: { timestamp: { [Op.between]: [startDate, new Date(endDate.getTime() + 86400000)] } } }),
@@ -975,7 +971,6 @@ app.post('/api/nomina/calcular', async (req, res) => {
     const diasFestivosSet = new Set(diasFestivos.map(d => d.fecha));
     const nominaCalculada = [];
 
-    // 2. Iterar por cada empleado y calcular su nómina
     for (const emp of empleados) {
       let dias_laborados = 0;
       let bono_puntualidad = 0;
@@ -1003,12 +998,12 @@ app.post('/api/nomina/calcular', async (req, res) => {
           dias_laborados++;
         }
 
-        if (diaLaborado && !esFestivo && !esDescanso && !esVacacion && !esPermiso) {
-          const bonoPuntual = bonosCondicionales.find(b => b.tipo_condicion === 'PUNTUALIDAD' && b.nombre.toUpperCase().includes(emp.bono.toUpperCase()));
-          if (bonoPuntual) {
-            const horaEntrada = new Date(entradaHoy.timestamp);
-            const horaLimite = new Date(horaEntrada.getFullYear(), horaEntrada.getMonth(), horaEntrada.getDate(), he_horas, he_minutos, 0);
-            const minutosLlegada = (horaEntrada.getTime() - horaLimite.getTime()) / 60000;
+        if (diaLaborado && !esFestivo && !esDescanso && !esVacacion && !esPermiso && emp.bono) {
+          const bonoPuntual = bonosCondicionales.find(b => b.tipo_condicion === 'PUNTUALIDAD' && b.nombre.toUpperCase() === emp.bono.toUpperCase());
+          if (bonoPuntual && emp.horaEntrada) {
+            const horaEntradaTS = new Date(entradaHoy.timestamp);
+            const horaLimite = new Date(horaEntradaTS.getFullYear(), horaEntradaTS.getMonth(), horaEntradaTS.getDate(), he_horas, he_minutos, 0);
+            const minutosLlegada = (horaEntradaTS.getTime() - horaLimite.getTime()) / 60000;
             
             if (minutosLlegada <= bonoPuntual.valor_condicion) {
               bono_puntualidad += bonoPuntual.monto;
@@ -1028,7 +1023,7 @@ app.post('/api/nomina/calcular', async (req, res) => {
         employeeId: emp.id,
         nombre: emp.nombre,
         puesto: emp.puesto,
-        rfc: 'PECI750723M30', // Asumido
+        rfc: 'PECI750723M30',
         fecha_ingreso: new Date(emp.fechaIngreso).toLocaleDateString('es-MX'),
         dias_laborados,
         salario_diario: emp.salario,
