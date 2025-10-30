@@ -158,7 +158,7 @@ function Kiosk() {
           endDate: filtroFin
         }
       });
-      setReportData(response.data.reporte);
+      setReportData(response.data.reporte.reverse());
     } catch (error) {
       console.error("Error generando reporte:", error);
     } finally {
