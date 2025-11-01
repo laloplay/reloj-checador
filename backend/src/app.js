@@ -216,7 +216,6 @@ app.post('/api/employees/:employeeId/register-face', async (req, res) => {
       ExternalImageId: employeeId.toString(),
       MaxFaces: 1,
       QualityFilter: "AUTO",
-      DetectionAttributes: ["DEFAULT"]
     });
     await rekognitionClient.send(command);
     res.json({ success: true, message: `Cara del empleado ${employeeId} registrada.` });
