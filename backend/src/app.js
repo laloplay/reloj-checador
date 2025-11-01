@@ -284,9 +284,9 @@ app.delete('/api/employees/:id', async (req, res) => {
 });
 
 app.post('/api/attendance/check-in', async (req, res) => {
-  const { image, fingerprint, type } = req.body; 
-  if (!image || !fingerprint || !type) {
-    return res.status(400).json({ error: "Datos incompletos (imagen, fingerprint o tipo)." });
+  const { image, fingerprint, type, timestamp } = req.body; 
+  if (!image || !fingerprint || !type || !timestamp) {
+    return res.status(400).json({ error: "Datos incompletos (imagen, fingerprint, tipo o timestamp)." });
   }
   const imageBuffer = Buffer.from(image.replace(/^data:image\/jpeg;base64,/, ""), 'base64');
   try {
@@ -343,10 +343,10 @@ app.post('/api/attendance/check-in', async (req, res) => {
         }
       }
       
+      const ahora = new Date(timestamp);
       let statusRegistro = 'PUNTUAL';
       if (type === 'ENTRADA' && employee.horaEntrada) {
         const [he_horas, he_minutos] = employee.horaEntrada.split(':').map(Number);
-        const ahora = new Date();
         const horaLimite = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate(), he_horas, he_minutos, 0);
         
         if (ahora > horaLimite) {
@@ -356,7 +356,8 @@ app.post('/api/attendance/check-in', async (req, res) => {
 
       await Registro.create({
         employeeId: parseInt(employeeId),
-        type: type
+        type: type,
+        timestamp: ahora 
       });
       
       res.json({ success: true, employeeName: employee.nombre, type: type, status: statusRegistro });
@@ -855,7 +856,7 @@ app.post('/api/permisos', async (req, res) => {
   try {
     const { employeeId, fecha_inicio, fecha_fin, motivoId } = req.body;
     if (!employeeId || !fecha_inicio || !fecha_fin || !motivoId) {
-      return res.status(404).json({ error: 'Todos los campos son requeridos.' });
+      return res.status(400).json({ error: 'Todos los campos son requeridos.' });
     }
     const nuevoPermiso = await Permiso.create({ employeeId, fecha_inicio, fecha_fin, motivoId });
     res.status(201).json(nuevoPermiso);

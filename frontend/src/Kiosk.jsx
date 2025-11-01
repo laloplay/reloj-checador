@@ -40,6 +40,7 @@ function Kiosk() {
     setLoading(true);
     setCheckInMessage({ variant: 'info', text: '', icon: '' });
     const imageSrc = webcamRef.current?.getScreenshot();
+    const timestamp = new Date().toISOString();
 
     if (!imageSrc) {
       setCheckInMessage({ variant: 'warning', text: 'No se pudo capturar la imagen.', icon: 'bi-exclamation-triangle-fill' });
@@ -50,7 +51,8 @@ function Kiosk() {
       const response = await axios.post('/api/attendance/check-in', {
         image: imageSrc,
         fingerprint: fingerprint,
-        type: type
+        type: type,
+        timestamp: timestamp
       });
 
       const employeeName = response.data.employeeName || 'Empleado';
@@ -128,6 +130,8 @@ function Kiosk() {
     setReportData([]);
     setSelectedEmployeeId('');
     setEmpleadoSeleccionado(null);
+    setFiltroInicio(getDefaultStartDate());
+    setFiltroFin(getToday());
     try {
       const response = await axios.get('/api/employees', {
         params: { sucursal: sucursalNombre }
@@ -158,7 +162,7 @@ function Kiosk() {
           endDate: filtroFin
         }
       });
-      setReportData(response.data.reporte.reverse());
+      setReportData(response.data.reporte);
     } catch (error) {
       console.error("Error generando reporte:", error);
     } finally {
@@ -296,7 +300,6 @@ function Kiosk() {
               >
                 <i className="bi bi-list-check me-2"></i>Ver Registros ({sucursalNombre})
               </Button>
-
             </div>
           </div>
         </Card.Body>
@@ -408,7 +411,7 @@ function Kiosk() {
             </div>
           )}
 
-          <div className="table-responsive">
+          <div className="table-responsive" style={{ maxHeight: '400px', overflowY: 'auto' }}>
             <Table striped bordered hover variant="dark" className="align-middle">
               <thead>
                 <tr>
@@ -422,7 +425,7 @@ function Kiosk() {
                 {loadingReport ? (
                   <tr><td colSpan="4" className="text-center"><Spinner animation="border" /></td></tr>
                 ) : reportData.length > 0 ? (
-                  reportData.map(item => (
+                  reportData.slice().reverse().map(item => (
                     <tr key={item.fecha}>
                       <td className="fw-bold">{formatFecha(item.fecha)}</td>
                       <td className={getStatusClass(item.status)}>{item.status}</td>
