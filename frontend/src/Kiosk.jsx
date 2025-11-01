@@ -2,12 +2,14 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import axios from 'axios';
 import FingerprintJS from '@fingerprintjs/fingerprintjs';
 import Webcam from 'react-webcam';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router-dom'; 
 import { Spinner, Alert, Card, Button, Form, Row, Col, Modal, Table } from 'react-bootstrap';
 import io from 'socket.io-client';
 import 'animate.css';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
-const socket = io();
+const socket = io(); 
 
 const getToday = () => new Date().toISOString().split('T')[0];
 
@@ -48,13 +50,13 @@ function Kiosk() {
       return;
     }
     try {
-      const response = await axios.post('/api/attendance/check-in', {
-        image: imageSrc,
+      const response = await axios.post('/api/attendance/check-in', { 
+        image: imageSrc, 
         fingerprint: fingerprint,
         type: type,
         timestamp: timestamp
       });
-
+      
       const employeeName = response.data.employeeName || 'Empleado';
       const registrationType = response.data.type === 'ENTRADA' ? 'Entrada' : 'Salida';
       const statusRegistro = response.data.status;
@@ -77,14 +79,14 @@ function Kiosk() {
 
   useEffect(() => {
     const getFingerprintAndVerify = async () => {
-      try {
+       try {
         const fp = await FingerprintJS.load();
         const result = await fp.get();
         const deviceFingerprint = result.visitorId;
         setFingerprint(deviceFingerprint);
-
+        
         const response = await axios.post('/api/devices/verify', { fingerprint: deviceFingerprint });
-
+        
         setStatus(response.data.status);
         if (response.data.isAuthorized) {
           setSucursalNombre(response.data.sucursalNombre);
@@ -101,7 +103,7 @@ function Kiosk() {
     getFingerprintAndVerify();
 
     const timerId = setInterval(() => setDateTime(new Date()), 1000);
-    return () => clearInterval(timerId);
+    return () => clearInterval(timerId); 
 
   }, []);
 
@@ -133,8 +135,8 @@ function Kiosk() {
     setFiltroInicio(getDefaultStartDate());
     setFiltroFin(getToday());
     try {
-      const response = await axios.get('/api/employees', {
-        params: { sucursal: sucursalNombre }
+      const response = await axios.get('/api/employees', { 
+        params: { sucursal: sucursalNombre } 
       });
       setEmpleadosSucursal(response.data);
     } catch (error) {
@@ -145,7 +147,7 @@ function Kiosk() {
   };
 
   const handleGenerateReportKiosk = async (e) => {
-    if (e) e.preventDefault();
+    if(e) e.preventDefault();
     if (!selectedEmployeeId) {
       return;
     }
@@ -169,24 +171,103 @@ function Kiosk() {
       setLoadingReport(false);
     }
   };
-
+  
   useEffect(() => {
     if (showReportModal && selectedEmployeeId) {
       handleGenerateReportKiosk();
     }
   }, [selectedEmployeeId, filtroInicio, filtroFin, showReportModal]);
 
-  const formatFecha = (dateString) => {
+  const handlePrintPDF = () => {
+    if (!empleadoSeleccionado || reportData.length === 0) return;
+
+    const doc = new jsPDF();
+    
+    doc.setFontSize(18);
+    doc.setTextColor('#0d6efd');
+    doc.text("Reporte de Asistencia", 14, 22);
+
+    doc.setFontSize(12);
+    doc.setTextColor('#212529');
+    doc.text(`Empleado: ${empleadoSeleccionado.nombre}`, 14, 32);
+    doc.setFontSize(10);
+    doc.setTextColor('#6c757d');
+    doc.text(`Puesto: ${empleadoSeleccionado.puesto} | Sucursal: ${empleadoSeleccionado.sucursal}`, 14, 38);
+    doc.text(`Periodo: ${formatFecha(filtroInicio, true)} al ${formatFecha(filtroFin, true)}`, 14, 44);
+
+    const tableColumn = ["Fecha", "Estatus", "Hora Entrada", "Hora Salida"];
+    const tableRows = [];
+
+    reportData.slice().reverse().forEach(item => {
+      const rowData = [
+        formatFecha(item.fecha),
+        item.status,
+        item.entrada,
+        item.salida
+      ];
+      tableRows.push(rowData);
+    });
+
+    autoTable(doc, {
+      head: [tableColumn],
+      body: tableRows,
+      startY: 50,
+      theme: 'grid',
+      headStyles: {
+        fillColor: [13, 110, 253], 
+        textColor: [255, 255, 255],
+        fontSize: 10,
+        fontStyle: 'bold'
+      },
+      styles: {
+        fontSize: 9,
+        cellPadding: 2,
+      },
+      alternateRowStyles: {
+        fillColor: [244, 247, 246]
+      },
+      didDrawCell: (data) => {
+        if (data.column.index === 1) { 
+          const status = data.cell.text[0];
+          let color = '#000000';
+          if (status === 'OK') color = '#198754';
+          if (status === 'FALTA') color = '#dc3545';
+          if (status === 'FEST' || status === 'DESC') color = '#6c757d';
+          if (status === 'VAC' || status ==='PERM' || data.cell.text[0].startsWith('INC')) color = '#ffc107'; 
+          doc.setTextColor(color);
+        }
+      }
+    });
+
+    const pageCount = doc.internal.getNumberOfPages();
+    for(let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setFontSize(8);
+      doc.setTextColor('#6c757d');
+      doc.text(`© ${new Date().getFullYear()} UnifamCheck`, 14, doc.internal.pageSize.height - 10);
+      doc.text(`Página ${i} de ${pageCount}`, doc.internal.pageSize.width - 35, doc.internal.pageSize.height - 10);
+    }
+    
+    doc.save(`Reporte_${empleadoSeleccionado.nombre.replace(/\s/g, '_')}.pdf`);
+  };
+
+  const formatFecha = (dateString, forPDF = false) => {
     const date = new Date(dateString + 'T00:00:00');
+    
+    if (forPDF) {
+      const optionsPDF = { day: '2-digit', month: '2-digit', year: '2-digit', timeZone: 'UTC' };
+      return new Date(date).toLocaleDateString('es-MX', optionsPDF);
+    }
+
     const options = {
-      weekday: 'short',
-      day: '2-digit',
-      month: '2-digit',
+      weekday: 'short', 
+      day: '2-digit', 
+      month: '2-digit', 
       year: '2-digit',
       timeZone: 'UTC'
     };
     let formatted = new Date(date).toLocaleDateString('es-MX', options);
-    return formatted.replace('.', '').replace(',', '');
+    return formatted.replace('.', '').replace(',', ''); 
   };
 
   const getStatusClass = (status) => {
@@ -220,9 +301,9 @@ function Kiosk() {
       <Card bg="dark" text="white" className="shadow-lg border-0 col-11 col-md-10 col-lg-9 col-xl-8 mx-auto animate__animated animate__fadeIn" style={{ borderRadius: '1rem', boxShadow: '0 10px 40px rgba(0,0,0,0.4)' }}>
         <Card.Body className="p-4 p-md-5">
           <div className="row g-4 g-lg-5 align-items-center">
-
+            
             <div className="col-md-6 text-center">
-              <h2 className="h4 mb-3 d-md-none text-muted fw-light">Reloj Checador</h2>
+               <h2 className="h4 mb-3 d-md-none text-muted fw-light">Reloj Checador</h2>
               <div className="ratio ratio-4x3 rounded-4 overflow-hidden shadow-inner bg-black mx-auto">
                 <Webcam
                   audio={false}
@@ -234,12 +315,12 @@ function Kiosk() {
                 />
               </div>
             </div>
-
+            
             <div className="col-md-6 text-center">
               <h1 className="h5 text-muted fw-light mb-3 d-none d-md-block">Control de Asistencia</h1>
               <p className="lead fs-6 mb-1 text-white-50">{date}</p>
               <p className="display-5 fw-bold text-primary mb-4">{time}</p>
-
+              
               <Row className="g-2">
                 <Col xs={6}>
                   <Button
@@ -274,7 +355,7 @@ function Kiosk() {
                   </Button>
                 </Col>
               </Row>
-
+              
               <div className="mt-3" style={{ minHeight: '60px' }}>
                 {checkInMessage.text && (
                   <Alert variant={checkInMessage.variant} className="py-2 mb-0 small rounded-pill d-flex align-items-center justify-content-center animate__animated animate__fadeInUp">
@@ -283,7 +364,7 @@ function Kiosk() {
                   </Alert>
                 )}
               </div>
-
+              
               <Button
                 size="sm"
                 className="mt-3 rounded-pill fw-bold text-dark"
@@ -306,7 +387,7 @@ function Kiosk() {
       </Card>
     );
   };
-
+  
   const renderNamingForm = () => (
     <Card bg="dark" text="white" className="text-center shadow-lg border-0 mx-auto animate__animated animate__fadeIn" style={{ maxWidth: '480px', borderRadius: '1rem' }}>
       <Card.Body className="p-5">
@@ -317,8 +398,8 @@ function Kiosk() {
         </Card.Text>
         <Form onSubmit={handleNameSubmit} className="mt-4" data-bs-theme="dark">
           <Form.Group>
-            <Form.Control
-              type="text"
+            <Form.Control 
+              type="text" 
               placeholder="Nombre del dispositivo"
               value={deviceName}
               onChange={(e) => setDeviceName(e.target.value.toUpperCase())}
@@ -346,7 +427,7 @@ function Kiosk() {
         return renderApproved();
       case 'rejected':
         return renderStatus('bi-x-octagon-fill', 'danger', 'Solicitud Rechazada', 'Este equipo no tiene permiso.');
-      default:
+      default: 
         return renderStatus('bi-wifi-off', 'danger', 'Error de Conexión', 'No se pudo verificar el estado.');
     }
   };
@@ -354,92 +435,97 @@ function Kiosk() {
   return (
     <div className="min-vh-100 d-flex flex-column align-items-center justify-content-center p-3" style={{ background: 'radial-gradient(circle at center, #2c3e50 0%, #1a202c 100%)' }}>
       {renderContent()}
-
+      
       <footer className="mt-4 text-center">
-        <Link to="/login-admin" className="text-white-50 text-decoration-none fw-light" style={{ fontSize: '0.8rem', opacity: 0.5, transition: 'opacity 0.3s ease' }} onMouseOver={e => e.currentTarget.style.opacity = 1} onMouseOut={e => e.currentTarget.style.opacity = 0.5}>
-          © {new Date().getFullYear()} UnifamCheck
-        </Link>
+         <Link to="/login-admin" className="text-white-50 text-decoration-none fw-light" style={{ fontSize: '0.8rem', opacity: 0.5, transition: 'opacity 0.3s ease' }} onMouseOver={e => e.currentTarget.style.opacity = 1} onMouseOut={e => e.currentTarget.style.opacity = 0.5}>
+           © {new Date().getFullYear()} UnifamCheck
+         </Link>
       </footer>
 
       <Modal show={showReportModal} onHide={() => setShowReportModal(false)} size="lg" centered data-bs-theme="dark">
-        <Modal.Header className="bg-dark text-white-50" closeButton>
-          <Modal.Title>
-            Reporte de Asistencia ({sucursalNombre})
-          </Modal.Title>
-        </Modal.Header>
-        <Modal.Body className="bg-dark text-white">
-
-          <Form onSubmit={handleGenerateReportKiosk}>
-            <Row className="g-3 mb-3 no-print">
-              <Col md={5}>
-                <Form.Group>
-                  <Form.Label>Empleado</Form.Label>
-                  <Form.Select value={selectedEmployeeId} onChange={(e) => setSelectedEmployeeId(e.target.value)} required disabled={loadingReport}>
-                    <option value="">Seleccionar empleado...</option>
-                    {empleadosSucursal.map(emp => (
-                      <option key={emp.id} value={emp.id}>{emp.nombre}</option>
-                    ))}
-                  </Form.Select>
-                </Form.Group>
-              </Col>
-              <Col md={3}>
-                <Form.Group>
-                  <Form.Label>Fecha Inicio</Form.Label>
-                  <Form.Control type="date" value={filtroInicio} onChange={(e) => setFiltroInicio(e.target.value)} required />
-                </Form.Group>
-              </Col>
-              <Col md={3}>
-                <Form.Group>
-                  <Form.Label>Fecha Fin</Form.Label>
-                  <Form.Control type="date" value={filtroFin} onChange={(e) => setFiltroFin(e.target.value)} required />
-                </Form.Group>
-              </Col>
-              <Col md={1} className="d-flex align-items-end">
-                <Button type="submit" variant="primary" className="w-100" disabled={loadingReport || !selectedEmployeeId}>
-                  {loadingReport ? <Spinner as="span" animation="border" size="sm" /> : <i className="bi bi-search"></i>}
+        <div id="reporte-para-imprimir-kiosko">
+          <Modal.Header className="bg-dark text-white-50" closeButton>
+            <Modal.Title>
+              Reporte de Asistencia ({sucursalNombre})
+            </Modal.Title>
+          </Modal.Header>
+          <Modal.Body className="bg-dark text-white">
+            
+            <Form onSubmit={handleGenerateReportKiosk}>
+              <Row className="g-3 mb-3 no-print">
+                <Col md={5}>
+                  <Form.Group>
+                    <Form.Label>Empleado</Form.Label>
+                    <Form.Select value={selectedEmployeeId} onChange={(e) => setSelectedEmployeeId(e.target.value)} required disabled={loadingReport}>
+                      <option value="">Seleccionar empleado...</option>
+                      {empleadosSucursal.map(emp => (
+                        <option key={emp.id} value={emp.id}>{emp.nombre}</option>
+                      ))}
+                    </Form.Select>
+                  </Form.Group>
+                </Col>
+                <Col md={3}>
+                  <Form.Group>
+                    <Form.Label>Fecha Inicio</Form.Label>
+                    <Form.Control type="date" value={filtroInicio} onChange={(e) => setFiltroInicio(e.target.value)} required />
+                  </Form.Group>
+                </Col>
+                <Col md={3}>
+                  <Form.Group>
+                    <Form.Label>Fecha Fin</Form.Label>
+                    <Form.Control type="date" value={filtroFin} onChange={(e) => setFiltroFin(e.target.value)} required />
+                  </Form.Group>
+                </Col>
+                <Col md={1} className="d-flex align-items-end">
+                  <Button type="submit" variant="primary" className="w-100" disabled={loadingReport || !selectedEmployeeId}>
+                    {loadingReport ? <Spinner as="span" animation="border" size="sm" /> : <i className="bi bi-search"></i>}
+                  </Button>
+                </Col>
+              </Row>
+            </Form>
+            
+            {empleadoSeleccionado && reportData.length > 0 && (
+              <div className="d-flex justify-content-between align-items-center my-3">
+                <div>
+                  <h5 className="mb-0 text-primary">{empleadoSeleccionado?.nombre}</h5>
+                  <p className="mb-0 text-white-50 small">{empleadoSeleccionado?.puesto}</p>
+                </div>
+                <Button variant="outline-light" onClick={handlePrintPDF} className="no-print">
+                  <i className="bi bi-printer-fill me-2"></i>Descargar PDF
                 </Button>
-              </Col>
-            </Row>
-          </Form>
-
-          {empleadoSeleccionado && reportData.length > 0 && (
-            <div className="d-flex justify-content-between align-items-center my-3">
-              <div>
-                <h5 className="mb-0 text-primary">{empleadoSeleccionado?.nombre}</h5>
-                <p className="mb-0 text-white-50 small">{empleadoSeleccionado?.puesto}</p>
               </div>
-            </div>
-          )}
+            )}
 
-          <div className="table-responsive" style={{ maxHeight: '400px', overflowY: 'auto' }}>
-            <Table striped bordered hover variant="dark" className="align-middle">
-              <thead>
-                <tr>
-                  <th>Fecha</th>
-                  <th>Estatus</th>
-                  <th>Hora Entrada</th>
-                  <th>Hora Salida</th>
-                </tr>
-              </thead>
-              <tbody>
-                {loadingReport ? (
-                  <tr><td colSpan="4" className="text-center"><Spinner animation="border" /></td></tr>
-                ) : reportData.length > 0 ? (
-                  reportData.slice().reverse().map(item => (
-                    <tr key={item.fecha}>
-                      <td className="fw-bold">{formatFecha(item.fecha)}</td>
-                      <td className={getStatusClass(item.status)}>{item.status}</td>
-                      <td>{item.entrada}</td>
-                      <td>{item.salida}</td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr><td colSpan="4" className="text-center text-white-50">Selecciona un empleado para ver su reporte.</td></tr>
-                )}
-              </tbody>
-            </Table>
-          </div>
-        </Modal.Body>
+            <div className="table-responsive">
+              <Table striped bordered hover variant="dark" className="align-middle">
+                <thead>
+                  <tr>
+                    <th>Fecha</th>
+                    <th>Estatus</th>
+                    <th>Hora Entrada</th>
+                    <th>Hora Salida</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {loadingReport ? (
+                    <tr><td colSpan="4" className="text-center"><Spinner animation="border" /></td></tr>
+                  ) : reportData.length > 0 ? (
+                    reportData.slice().reverse().map(item => (
+                      <tr key={item.fecha}>
+                        <td className="fw-bold">{formatFecha(item.fecha)}</td>
+                        <td className={getStatusClass(item.status)}>{item.status}</td>
+                        <td>{item.entrada}</td>
+                        <td>{item.salida}</td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr><td colSpan="4" className="text-center text-white-50">Selecciona un empleado para ver su reporte.</td></tr>
+                  )}
+                </tbody>
+              </Table>
+            </div>
+          </Modal.Body>
+        </div>
       </Modal>
 
     </div>
