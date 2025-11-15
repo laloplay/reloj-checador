@@ -58,14 +58,14 @@ app.post('/api/devices/verify', async (req, res) => {
   try {
     const { fingerprint } = req.body;
     if (!fingerprint) return res.status(400).json({ error: 'fingerprint es requerido' });
-    const device = await Dispositivo.findOne({ 
+    const device = await Dispositivo.findOne({
       where: { fingerprint: fingerprint },
       include: { model: Sucursal, attributes: ['nombre'] }
     });
     if (device) {
-      res.json({ 
-        isAuthorized: device.status === 'approved', 
-        status: device.status, 
+      res.json({
+        isAuthorized: device.status === 'approved',
+        status: device.status,
         deviceId: device.id,
         sucursalNombre: device.Sucursal?.nombre
       });
@@ -110,10 +110,10 @@ app.get('/api/devices/pending', async (req, res) => {
 
 app.get('/api/devices/approved', async (req, res) => {
   try {
-    const devices = await Dispositivo.findAll({ 
+    const devices = await Dispositivo.findAll({
       where: { status: 'approved' },
       include: { model: Sucursal, attributes: ['nombre'] },
-      order: [['createdAt', 'DESC']] 
+      order: [['createdAt', 'DESC']]
     });
     res.json(devices);
   } catch (error) {
@@ -124,9 +124,9 @@ app.get('/api/devices/approved', async (req, res) => {
 
 app.get('/api/devices/rejected', async (req, res) => {
   try {
-    const devices = await Dispositivo.findAll({ 
+    const devices = await Dispositivo.findAll({
       where: { status: 'rejected' },
-      order: [['createdAt', 'DESC']] 
+      order: [['createdAt', 'DESC']]
     });
     res.json(devices);
   } catch (error) {
@@ -159,7 +159,7 @@ app.post('/api/devices/reject', async (req, res) => {
     const device = await Dispositivo.findByPk(id);
     if (device) {
       device.status = 'rejected';
-      device.sucursalId = null; 
+      device.sucursalId = null;
       await device.save();
       res.json({ success: true, message: `Dispositivo ${id} rechazado.` });
     } else {
@@ -232,10 +232,10 @@ app.get('/api/employees', async (req, res) => {
     if (sucursal && sucursal !== 'TODAS') {
       whereClause.sucursal = sucursal;
     }
-    
-    const employees = await Empleado.findAll({ 
+
+    const employees = await Empleado.findAll({
       where: whereClause,
-      order: [['nombre', 'ASC']] 
+      order: [['nombre', 'ASC']]
     });
     res.json(employees);
   } catch (error) {
@@ -264,7 +264,7 @@ app.delete('/api/employees/:id', async (req, res) => {
     if (!employee) {
       return res.status(404).json({ error: 'Empleado no encontrado' });
     }
-    
+
     try {
       const deleteCommand = new DeleteFacesCommand({
         CollectionId: COLLECTION_ID,
@@ -284,15 +284,15 @@ app.delete('/api/employees/:id', async (req, res) => {
 });
 
 app.post('/api/attendance/check-in', async (req, res) => {
-  const { image, fingerprint, type, timestamp } = req.body; 
+  const { image, fingerprint, type, timestamp } = req.body;
   if (!image || !fingerprint || !type || !timestamp) {
     return res.status(400).json({ error: "Datos incompletos (imagen, fingerprint, tipo o timestamp)." });
   }
   const imageBuffer = Buffer.from(image.replace(/^data:image\/jpeg;base64,/, ""), 'base64');
   try {
-    const device = await Dispositivo.findOne({ 
+    const device = await Dispositivo.findOne({
       where: { fingerprint: fingerprint, status: 'approved' },
-      include: { model: Sucursal, attributes: ['nombre'] } 
+      include: { model: Sucursal, attributes: ['nombre'] }
     });
 
     if (!device) {
@@ -313,15 +313,15 @@ app.post('/api/attendance/check-in', async (req, res) => {
     if (data.FaceMatches && data.FaceMatches.length > 0) {
       const employeeId = data.FaceMatches[0].Face.ExternalImageId;
       const employee = await Empleado.findByPk(parseInt(employeeId));
-      
+
       if (!employee) {
         return res.status(404).json({ success: false, message: 'Empleado no encontrado en la BD.' });
       }
 
       if (device.Sucursal.nombre !== employee.sucursal) {
-        return res.status(403).json({ 
-          success: false, 
-          message: `Acceso Denegado: Este dispositivo es de ${device.Sucursal.nombre}, pero tú perteneces a ${employee.sucursal}.` 
+        return res.status(403).json({
+          success: false,
+          message: `Acceso Denegado: Este dispositivo es de ${device.Sucursal.nombre}, pero tú perteneces a ${employee.sucursal}.`
         });
       }
 
@@ -342,13 +342,13 @@ app.post('/api/attendance/check-in', async (req, res) => {
           return res.status(400).json({ success: false, message: 'Error: No puedes registrar una SALIDA sin una ENTRADA previa.' });
         }
       }
-      
+
       const ahora = new Date(timestamp);
       let statusRegistro = 'PUNTUAL';
       if (type === 'ENTRADA' && employee.horaEntrada) {
         const [he_horas, he_minutos] = employee.horaEntrada.split(':').map(Number);
         const horaLimite = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate(), he_horas, he_minutos, 0);
-        
+
         if (ahora > horaLimite) {
           statusRegistro = 'RETARDO';
         }
@@ -357,9 +357,9 @@ app.post('/api/attendance/check-in', async (req, res) => {
       await Registro.create({
         employeeId: parseInt(employeeId),
         type: type,
-        timestamp: ahora 
+        timestamp: ahora
       });
-      
+
       res.json({ success: true, employeeName: employee.nombre, type: type, status: statusRegistro });
     } else {
       res.status(404).json({ success: false, message: 'Rostro no reconocido.' });
@@ -371,14 +371,14 @@ app.post('/api/attendance/check-in', async (req, res) => {
 });
 
 app.get('/api/puestos', async (req, res) => {
-  try { const data = await Puesto.findAll({ order: [['nombre', 'ASC']] }); res.json(data); } 
+  try { const data = await Puesto.findAll({ order: [['nombre', 'ASC']] }); res.json(data); }
   catch (error) { res.status(500).json({ error: 'Error al obtener puestos' }); }
 });
 app.post('/api/puestos', async (req, res) => {
-  try { const data = await Puesto.create(req.body); res.status(201).json(data); } 
+  try { const data = await Puesto.create(req.body); res.status(201).json(data); }
   catch (error) {
     if (error.name === 'SequelizeUniqueConstraintError') return res.status(400).json({ error: `El puesto "${req.body.nombre}" ya existe.` });
-    res.status(500).json({ error: 'Error al crear el puesto.' }); 
+    res.status(500).json({ error: 'Error al crear el puesto.' });
   }
 });
 app.put('/api/puestos/:id', async (req, res) => {
@@ -406,7 +406,7 @@ app.post('/api/sucursales', async (req, res) => {
   try { const data = await Sucursal.create(req.body); res.status(201).json(data); }
   catch (error) {
     if (error.name === 'SequelizeUniqueConstraintError') return res.status(400).json({ error: `La sucursal "${req.body.nombre}" ya existe.` });
-    res.status(500).json({ error: 'Error al crear la sucursal.' }); 
+    res.status(500).json({ error: 'Error al crear la sucursal.' });
   }
 });
 app.put('/api/sucursales/:id', async (req, res) => {
@@ -427,30 +427,30 @@ app.delete('/api/sucursales/:id', async (req, res) => {
 });
 
 app.get('/api/bonos', async (req, res) => {
-  try { const data = await Bono.findAll({ order: [['nombre', 'ASC']] }); res.json(data); } 
+  try { const data = await Bono.findAll({ order: [['nombre', 'ASC']] }); res.json(data); }
   catch (error) { res.status(500).json({ error: 'Error al obtener bonos' }); }
 });
 app.post('/api/bonos', async (req, res) => {
-  try { 
+  try {
     const { nombre, monto, tipo_condicion, valor_condicion } = req.body;
-    const data = await Bono.create({ 
-      nombre: nombre.toUpperCase(), 
-      monto, 
-      tipo_condicion: tipo_condicion || 'NINGUNO', 
+    const data = await Bono.create({
+      nombre: nombre.toUpperCase(),
+      monto,
+      tipo_condicion: tipo_condicion || 'NINGUNO',
       valor_condicion: valor_condicion ? -Math.abs(parseInt(valor_condicion, 10)) : 0
-    }); 
-    res.status(201).json(data); 
-  } 
+    });
+    res.status(201).json(data);
+  }
   catch (error) {
     if (error.name === 'SequelizeUniqueConstraintError') return res.status(400).json({ error: `El bono "${req.body.nombre}" ya existe.` });
-    res.status(500).json({ error: 'Error al crear el bono.' }); 
+    res.status(500).json({ error: 'Error al crear el bono.' });
   }
 });
 app.put('/api/bonos/:id', async (req, res) => {
   try {
     const item = await Bono.findByPk(req.params.id);
     if (!item) return res.status(404).json({ error: 'Bono no encontrado' });
-    
+
     const { nombre, monto, tipo_condicion, valor_condicion } = req.body;
     const updatedData = {
       nombre: nombre.toUpperCase(),
@@ -458,7 +458,7 @@ app.put('/api/bonos/:id', async (req, res) => {
       tipo_condicion: tipo_condicion || 'NINGUNO',
       valor_condicion: (tipo_condicion !== 'NINGUNO' && valor_condicion) ? -Math.abs(parseInt(valor_condicion, 10)) : 0
     };
-    
+
     await item.update(updatedData);
     res.json(item);
   } catch (error) { res.status(500).json({ error: 'Error al actualizar' }); }
@@ -487,7 +487,7 @@ app.get('/api/registros', async (req, res) => {
       Registro.findAll({
         where: {
           employeeId: employeeId,
-          timestamp: { [Op.between]: [new Date(startDate), new Date(new Date(endDate).getTime() + 86400000)] } 
+          timestamp: { [Op.between]: [new Date(startDate), new Date(new Date(endDate).getTime() + 86400000)] }
         },
         order: [['timestamp', 'ASC']]
       }),
@@ -517,16 +517,20 @@ app.get('/api/registros', async (req, res) => {
 
     const diasDescansoSet = new Set(empleado.DiaDescansos.map(d => d.dia_semana));
     const diasFestivosSet = new Set(diasFestivos.map(d => d.fecha));
-    
+
     const registrosMap = new Map();
     for (const reg of registros) {
-      const fecha = new Date(reg.timestamp).toISOString().split('T')[0];
+      const fechaObj = new Date(reg.timestamp);
+      const year = fechaObj.getFullYear();
+      const month = (fechaObj.getMonth() + 1).toString().padStart(2, '0');
+      const day = fechaObj.getDate().toString().padStart(2, '0');
+      const fecha = `${year}-${month}-${day}`;
       const hora = new Date(reg.timestamp).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
-      
+
       if (!registrosMap.has(fecha)) {
         registrosMap.set(fecha, {});
       }
-      
+
       const diaRegistros = registrosMap.get(fecha);
       if (reg.type === 'ENTRADA' && !diaRegistros.entrada) {
         diaRegistros.entrada = hora;
@@ -536,45 +540,51 @@ app.get('/api/registros', async (req, res) => {
     }
 
     const reporte = [];
-    const fechaInicio = new Date(`${startDate}T12:00:00Z`);
-    const fechaFin = new Date(`${endDate}T12:00:00Z`);
+    const fechaInicio = new Date(`${startDate}T06:00:00`);
+    const fechaFin = new Date(`${endDate}T06:00:00`);
 
-    for (let d = new Date(fechaInicio); d <= fechaFin; d.setUTCDate(d.getUTCDate() + 1)) {
-      const fechaActualISO = d.toISOString().split('T')[0];
-      const diaSemana = d.getUTCDay();
-      
+    for (let d = new Date(fechaInicio); d <= fechaFin; d.setDate(d.getDate() + 1)) {
+
+      const year = d.getFullYear();
+      const month = (d.getMonth() + 1).toString().padStart(2, '0');
+      const day = d.getDate().toString().padStart(2, '0');
+      const fechaActualLocal = `${year}-${month}-${day}`;
+
+      const diaSemana = d.getDay();
+
       let diaReporte = {
-        fecha: fechaActualISO,
+        fecha: fechaActualLocal,
         status: 'FALTA',
         entrada: '--',
         salida: '--'
       };
 
-      if (diasFestivosSet.has(fechaActualISO)) {
+      if (diasFestivosSet.has(fechaActualLocal)) {
         diaReporte.status = 'FEST';
       }
       else if (diasDescansoSet.has(diaSemana)) {
         diaReporte.status = 'DESC';
       }
-      else if (vacaciones.some(v => fechaActualISO >= v.fecha_inicio && fechaActualISO <= v.fecha_fin)) {
+      else if (vacaciones.some(v => fechaActualLocal >= v.fecha_inicio && fechaActualLocal <= v.fecha_fin)) {
         diaReporte.status = 'VAC';
       }
       else {
-        const permisoHoy = permisos.find(p => fechaActualISO >= p.fecha_inicio && fechaActualISO <= p.fecha_fin);
+        const permisoHoy = permisos.find(p => fechaActualLocal >= p.fecha_inicio && fechaActualLocal <= p.fecha_fin);
         if (permisoHoy) {
           diaReporte.status = permisoHoy.MotivoPermiso ? permisoHoy.MotivoPermiso.nombre.substring(0, 4).toUpperCase() : 'PERM';
         }
       }
 
       if (diaReporte.status === 'FALTA') {
-        const registroDelDia = registrosMap.get(fechaActualISO);
+        // Ahora la llave SÍ coincide con la del mapa (ambas son locales)
+        const registroDelDia = registrosMap.get(fechaActualLocal);
         if (registroDelDia && registroDelDia.entrada) {
           diaReporte.status = 'OK';
           diaReporte.entrada = registroDelDia.entrada;
           diaReporte.salida = registroDelDia.salida || '--';
         }
       }
-      
+
       reporte.push(diaReporte);
     }
 
@@ -598,9 +608,9 @@ app.get('/api/registros-sucursal', async (req, res) => {
     const endOfDay = new Date();
     endOfDay.setHours(23, 59, 59, 999);
 
-    const empleados = await Empleado.findAll({ 
-      where: { sucursal: sucursal }, 
-      attributes: ['id'] 
+    const empleados = await Empleado.findAll({
+      where: { sucursal: sucursal },
+      attributes: ['id']
     });
 
     if (empleados.length === 0) {
@@ -609,18 +619,18 @@ app.get('/api/registros-sucursal', async (req, res) => {
 
     const employeeIds = empleados.map(e => e.id);
 
-    const registros = await Registro.findAll({ 
-      where: { 
+    const registros = await Registro.findAll({
+      where: {
         employeeId: { [Op.in]: employeeIds },
         timestamp: { [Op.between]: [startOfDay, endOfDay] }
-      }, 
-      include: { 
-        model: Empleado, 
-        attributes: ['nombre'] 
-      }, 
-      order: [['timestamp', 'DESC']] 
+      },
+      include: {
+        model: Empleado,
+        attributes: ['nombre']
+      },
+      order: [['timestamp', 'DESC']]
     });
-    
+
     res.json(registros);
   } catch (error) {
     console.error("Error obteniendo registros de sucursal:", error);
@@ -721,16 +731,16 @@ app.post('/api/dias-descanso/toggle', async (req, res) => {
     const { employeeId, dia_semana, isChecked } = req.body;
     if (isChecked) {
       await DiaDescanso.findOrCreate({
-        where: { 
-          employeeId: employeeId, 
+        where: {
+          employeeId: employeeId,
           dia_semana: dia_semana
         }
       });
       res.status(201).json({ message: 'Día de descanso añadido.' });
     } else {
       await DiaDescanso.destroy({
-        where: { 
-          employeeId: employeeId, 
+        where: {
+          employeeId: employeeId,
           dia_semana: dia_semana
         }
       });
@@ -830,7 +840,7 @@ app.get('/api/permisos', async (req, res) => {
     if (sucursal && sucursal !== 'TODAS') {
       includeWhere.sucursal = sucursal;
     }
-    
+
     const permisos = await Permiso.findAll({
       include: [
         {
@@ -880,9 +890,9 @@ app.delete('/api/permisos/:id', async (req, res) => {
 
 app.get('/api/admin/users', async (req, res) => {
   try {
-    const users = await Usuario.findAll({ 
+    const users = await Usuario.findAll({
       attributes: ['id', 'username', 'role'],
-      order: [['username', 'ASC']] 
+      order: [['username', 'ASC']]
     });
     res.json(users);
   } catch (error) {
@@ -895,7 +905,7 @@ app.delete('/api/admin/users/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const userToDelete = await Usuario.findByPk(id);
-    
+
     if (!userToDelete) {
       return res.status(404).json({ error: 'Usuario no encontrado.' });
     }
@@ -957,7 +967,7 @@ app.post('/api/nomina/calcular', async (req, res) => {
     const { fecha_inicio, fecha_fin } = req.body;
     const startDate = new Date(fecha_inicio);
     const endDate = new Date(fecha_fin);
-    
+
     const [empleados, registros, diasFestivos, vacaciones, permisos, bonosCondicionales, comisiones, deducciones] = await Promise.all([
       Empleado.findAll({ include: [DiaDescanso] }),
       Registro.findAll({ where: { timestamp: { [Op.between]: [startDate, new Date(endDate.getTime() + 86400000)] } } }),
@@ -978,9 +988,9 @@ app.post('/api/nomina/calcular', async (req, res) => {
 
       const diasDescansoSet = new Set(emp.DiaDescansos.map(d => d.dia_semana));
       const registrosEmpleado = registros.filter(r => r.employeeId === emp.id);
-      
+
       const [he_horas, he_minutos] = emp.horaEntrada.split(':').map(Number);
-      
+
       for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
         const fechaActualISO = d.toISOString().split('T')[0];
         const diaSemana = d.getDay();
@@ -1005,7 +1015,7 @@ app.post('/api/nomina/calcular', async (req, res) => {
             const horaEntradaTS = new Date(entradaHoy.timestamp);
             const horaLimite = new Date(horaEntradaTS.getFullYear(), horaEntradaTS.getMonth(), horaEntradaTS.getDate(), he_horas, he_minutos, 0);
             const minutosLlegada = (horaEntradaTS.getTime() - horaLimite.getTime()) / 60000;
-            
+
             if (minutosLlegada <= bonoPuntual.valor_condicion) {
               bono_puntualidad += bonoPuntual.monto;
             }
@@ -1055,8 +1065,8 @@ app.get('/api/nomina/runs/:id', async (req, res) => {
   try {
     const run = await NominaRun.findByPk(req.params.id);
     if (!run) return res.status(404).json({ error: 'Corrida no encontrada.' });
-    
-    const detalles = await NominaDetalle.findAll({ 
+
+    const detalles = await NominaDetalle.findAll({
       where: { nominaRunId: req.params.id }
     });
     res.json({ run, detalles });
@@ -1066,16 +1076,16 @@ app.get('/api/nomina/runs/:id', async (req, res) => {
 app.post('/api/nomina/guardar', async (req, res) => {
   try {
     const { nombre, fecha_inicio, fecha_fin, detalles } = req.body;
-    
+
     const newRun = await NominaRun.create({ nombre, fecha_inicio, fecha_fin });
-    
+
     const detallesConId = detalles.map(d => ({
       ...d,
       nominaRunId: newRun.id
     }));
-    
+
     await NominaDetalle.bulkCreate(detallesConId);
-    
+
     res.status(201).json(newRun);
   } catch (error) {
     console.error("Error guardando nómina:", error);
