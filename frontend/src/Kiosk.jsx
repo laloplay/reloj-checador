@@ -191,7 +191,7 @@ function Kiosk() {
 
   const getStatusClass = (status) => {
     switch (status) {
-      case 'LABORADO': return 'text-success fw-bold';
+      case 'LAB': return 'text-success fw-bold';
       case 'FALTA': return 'text-danger fw-bold';
       case 'FEST': return 'text-info';
       case 'VAC': return 'text-warning';

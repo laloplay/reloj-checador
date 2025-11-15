@@ -578,7 +578,7 @@ app.get('/api/registros', async (req, res) => {
       if (diaReporte.status === 'FALTA') {
         const registroDelDia = registrosMap.get(fechaActualLocal);
         if (registroDelDia && registroDelDia.entrada) {
-          diaReporte.status = 'LABORADO';
+          diaReporte.status = 'LAB';
           diaReporte.entrada = registroDelDia.entrada;
           diaReporte.salida = registroDelDia.salida || '--';
         }
