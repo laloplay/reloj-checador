@@ -196,7 +196,7 @@ function Kiosk() {
       case 'FEST': return 'text-info';
       case 'VAC': return 'text-warning';
       case 'PERM': return 'text-warning';
-      case 'DESC': return 'text-success';
+      case 'DESC': return 'text-success fw-bold';
       default: return 'text-warning';
     }
   };
