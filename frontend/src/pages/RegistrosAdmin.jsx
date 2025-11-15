@@ -180,7 +180,7 @@ function RegistrosAdmin() {
       case 'FEST': return 'text-info';
       case 'VAC': return 'text-warning';
       case 'PERM': return 'text-warning';
-      case 'DESC': return 'text-secondary';
+      case 'DESC': return 'text-success';
       default: return 'text-warning';
     }
   };
