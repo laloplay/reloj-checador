@@ -152,7 +152,7 @@ function RegistrosAdmin() {
         if (data.column.index === 1) { 
           const status = data.cell.text[0];
           let color = '#000000';
-          if (status === 'OK') color = '#198754';
+          if (status === 'LABORADO') color = '#198754';
           if (status === 'FALTA') color = '#dc3545';
           if (status === 'FEST' || status === 'DESC') color = '#6c757d';
           if (status === 'VAC' || status ==='PERM' || data.cell.text[0].startsWith('INC')) color = '#ffc107'; 
@@ -175,7 +175,7 @@ function RegistrosAdmin() {
 
   const getStatusClass = (status) => {
     switch (status) {
-      case 'OK': return 'text-success fw-bold';
+      case 'LABORADO': return 'text-success fw-bold';
       case 'FALTA': return 'text-danger fw-bold';
       case 'FEST': return 'text-info';
       case 'VAC': return 'text-warning';
