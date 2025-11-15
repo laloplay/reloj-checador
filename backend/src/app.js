@@ -576,10 +576,9 @@ app.get('/api/registros', async (req, res) => {
       }
 
       if (diaReporte.status === 'FALTA') {
-        // Ahora la llave SÍ coincide con la del mapa (ambas son locales)
         const registroDelDia = registrosMap.get(fechaActualLocal);
         if (registroDelDia && registroDelDia.entrada) {
-          diaReporte.status = 'OK';
+          diaReporte.status = 'LABORADO';
           diaReporte.entrada = registroDelDia.entrada;
           diaReporte.salida = registroDelDia.salida || '--';
         }
