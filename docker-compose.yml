@@ -3,7 +3,7 @@ version: '3.9'
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: reloj-chocador-db
+    container_name: reloj-checador-db
     restart: unless-stopped
     environment:
       POSTGRES_DB: ${DB_NAME}
@@ -22,28 +22,14 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: reloj-chocador-backend
+    container_name: reloj-checador-backend
     restart: unless-stopped
-    environment:
-      NODE_ENV: ${NODE_ENV}
-      PORT: ${BACKEND_PORT}
-      DB_HOST: postgres
-      DB_PORT: 5432
-      DB_NAME: ${DB_NAME}
-      DB_USER: ${DB_USER}
-      DB_PASSWORD: ${DB_PASSWORD}
-      JWT_SECRET: ${JWT_SECRET}
-      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
-      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
-      AWS_REGION: ${AWS_REGION}
-      REKOGNITION_COLLECTION_ID: ${REKOGNITION_COLLECTION_ID}
+    env_file:
+      - .env
     ports:
       - "${BACKEND_PORT}:${BACKEND_PORT}"
     depends_on:
       - postgres
-    volumes:
-      - ./backend:/app
-      - /app/node_modules
     networks:
       - reloj-network
 
@@ -51,27 +37,12 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    container_name: reloj-chocador-frontend
+    container_name: reloj-checador-frontend
     restart: unless-stopped
     ports:
-      - "${FRONTEND_PORT}:80"
+      # Conectamos el puerto 5173 (donde Nginx lo busca) al 80 (donde vive el build de React)
+      - "5173:80"
     depends_on:
-      - backend
-    networks:
-      - reloj-network
-
-  nginx:
-    image: nginx:alpine
-    container_name: reloj-chocador-nginx
-    restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./nginx/ssl:/etc/nginx/ssl:ro
-    depends_on:
-      - frontend
       - backend
     networks:
       - reloj-network
