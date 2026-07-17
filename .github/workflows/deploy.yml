@@ -21,16 +21,10 @@ jobs:
             # Jalar últimos cambios de GitHub
             git pull origin main
             
-            # Build del frontend
-            cd frontend
-            npm install
-            npm run build
-            cd ..
+            # Reconstruir backend y frontend con el nuevo código (sin tocar BD)
+            docker compose up -d --build --no-deps backend frontend
             
-            # Reiniciar solo backend (sin tocar la BD)
-            docker compose up -d --build --no-deps backend
-            
-            # Recargar Nginx
-            sudo systemctl reload nginx
+            # Limpiar imágenes viejas para no llenar el disco del servidor
+            docker image prune -f
             
             echo "Deploy completado ✅"
