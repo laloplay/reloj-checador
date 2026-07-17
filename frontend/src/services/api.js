@@ -3,7 +3,8 @@ import axios from 'axios';
 export const AUTH_TOKEN_STORAGE_KEY = 'auth-token';
 
 const api = axios.create({
-  baseURL: 'http://localhost:3001/api',
+  // Cambiamos la URL absoluta por una relativa
+  baseURL: '/api', 
   headers: {
     'Content-Type': 'application/json',
   },
