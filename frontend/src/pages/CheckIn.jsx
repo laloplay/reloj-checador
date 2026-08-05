@@ -563,28 +563,10 @@ export function CheckIn() {
                   </div>
                 </div>
               ) : pendienteSeleccionado ? (
-                <div className="flex flex-col gap-3">
+                <div className="flex flex-col gap-3 sm:w-[280px]">
                   <div className="rounded-2xl border border-blue-400/30 bg-blue-500/10 p-4">
-                    <p className="text-center text-xs text-slate-300">Confirmar datos y registrar rostro para:</p>
+                    <p className="text-center text-xs text-slate-300">Registrando rostro para:</p>
                     <p className="mt-1 text-center text-lg font-semibold text-white">{pendienteSeleccionado.nombre_completo}</p>
-                    <div className="mt-4 space-y-2 border-t border-blue-400/10 pt-3 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-slate-400">Puesto:</span>
-                        <span className="font-medium text-white">{pendienteSeleccionado.puesto_nombre || 'No asignado'}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-slate-400">Turno:</span>
-                        <span className="font-medium text-white">{pendienteSeleccionado.turno_nombre || 'No asignado'}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-slate-400">Ingreso:</span>
-                        <span className="font-medium text-white">
-                          {pendienteSeleccionado.fecha_ingreso
-                            ? new Date(pendienteSeleccionado.fecha_ingreso).toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' })
-                            : 'No asignada'}
-                        </span>
-                      </div>
-                    </div>
                   </div>
 
                   <button
@@ -605,7 +587,7 @@ export function CheckIn() {
                       {solicitudEnviando ? 'Enviando...' : 'Pedir ayuda'}
                     </button>
                     <button
-                      onClick={() => setPendienteSeleccionado(null)}
+                      onClick={() => setPendienteSeleccionado(null)} // Cancela el modo de registro facial
                       className="flex items-center justify-center gap-2 rounded-xl border border-slate-700 bg-slate-800 px-3 py-2.5 text-xs font-medium text-slate-300 transition hover:border-slate-600 hover:bg-slate-700 active:scale-[0.98] touch-manipulation"
                     >
                       <X size={14} />
