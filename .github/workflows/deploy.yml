@@ -21,6 +21,11 @@ jobs:
             # Jalar últimos cambios de GitHub
             git pull origin main
             
+            # Aplicar los cambios del esquema a la base de datos existente.
+            # Esto es necesario porque docker-entrypoint-initdb.d solo se ejecuta la primera vez.
+            echo "Aplicando actualizaciones al esquema de la base de datos..."
+            docker compose exec -T postgres psql -U laloplay -d reloj_checador -f /docker-entrypoint-initdb.d/01-schema.sql
+            
             # Reconstruir backend y frontend con el nuevo código (sin tocar BD)
             docker compose up -d --build --no-deps backend frontend
             
