@@ -543,7 +543,7 @@ export function CheckIn() {
 
         <main className="mt-3 flex min-h-0 flex-1 flex-col sm:mt-4">
           <section className="flex h-full min-h-0 flex-1 flex-col overflow-hidden rounded-[1.5rem] border border-white/10 bg-white/5 shadow-[0_28px_80px_rgba(0,0,0,0.28)] backdrop-blur-2xl sm:rounded-[1.75rem]">
-            <div className="grid shrink-0 grid-cols-1 gap-3 border-b border-white/5 p-4 sm:grid-cols-[1fr_auto] sm:items-end sm:gap-4 sm:p-5 lg:p-6">
+            <div className="shrink-0 border-b border-white/5 p-4 sm:p-5 lg:p-6">
               <div>
                 <div className="inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-500/10 px-3 py-1 text-[10px] uppercase tracking-[0.35em] text-cyan-100">
                   <Clock3 size={12} />
@@ -554,77 +554,6 @@ export function CheckIn() {
                 </div>
                 <div className="mt-2 text-sm text-slate-400 sm:text-base lg:text-lg">{fecha}</div>
               </div>
-
-              {cargandoDetalles ? (
-                <div className="flex items-center justify-center sm:w-[280px]">
-                  <div className="flex flex-col items-center justify-center gap-3 py-10 text-slate-400">
-                    <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-cyan-400" />
-                    <p className="text-sm">Cargando datos...</p>
-                  </div>
-                </div>
-              ) : pendienteSeleccionado ? (
-                <div className="flex flex-col gap-3 sm:w-[280px]">
-                  <div className="rounded-2xl border border-blue-400/30 bg-blue-500/10 p-4">
-                    <p className="text-center text-xs text-slate-300">Registrando rostro para:</p>
-                    <p className="mt-1 text-center text-lg font-semibold text-white">{pendienteSeleccionado.nombre_completo}</p>
-                  </div>
-
-                  <button
-                    onClick={registrarFacialPendiente}
-                    disabled={procesando || !streamActivo}
-                    className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-b from-blue-500 to-blue-600 px-4 py-3.5 text-sm font-semibold tracking-wide text-white shadow-lg shadow-blue-600/30 transition hover:from-blue-400 hover:to-blue-500 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
-                  >
-                    <User size={18} />
-                    {procesando ? 'Procesando...' : 'Completar registro facial'}
-                  </button>
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      onClick={enviarSolicitudCorreccion}
-                      disabled={solicitudEnviando}
-                      className="flex items-center justify-center gap-2 rounded-xl border border-slate-700 bg-slate-800 px-3 py-2.5 text-xs font-medium text-slate-300 transition hover:border-slate-600 hover:bg-slate-700 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 touch-manipulation"
-                    >
-                      <HelpCircle size={14} />
-                      {solicitudEnviando ? 'Enviando...' : 'Pedir ayuda'}
-                    </button>
-                    <button
-                      onClick={() => setPendienteSeleccionado(null)} // Cancela el modo de registro facial
-                      className="flex items-center justify-center gap-2 rounded-xl border border-slate-700 bg-slate-800 px-3 py-2.5 text-xs font-medium text-slate-300 transition hover:border-slate-600 hover:bg-slate-700 active:scale-[0.98] touch-manipulation"
-                    >
-                      <X size={14} />
-                      Cancelar
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 gap-3 sm:w-auto sm:grid-cols-2 sm:gap-2">
-                  <button
-                    onClick={() => capturarYEnviar('entrada')}
-                    disabled={procesando || !streamActivo}
-                    className="group flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-b from-blue-500 to-blue-600 px-4 py-4 text-sm font-semibold tracking-wide text-white shadow-lg shadow-blue-600/30 transition hover:from-blue-400 hover:to-blue-500 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
-                  >
-                    <RefreshCw
-                      size={16}
-                      className={`transition-transform ${
-                        procesando && processingType === 'entrada' ? 'animate-spin' : 'group-hover:rotate-45'
-                      }`}
-                    />
-                    Registrar Entrada
-                  </button>
-                  <button
-                    onClick={() => capturarYEnviar('salida')}
-                    disabled={procesando || !streamActivo}
-                    className="group flex items-center justify-center gap-2 rounded-2xl border border-slate-700 bg-slate-800/80 px-4 py-4 text-sm font-medium tracking-wide text-slate-300 transition hover:border-slate-600 hover:bg-slate-700 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400/60 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
-                  >
-                    <RefreshCw
-                      size={16}
-                      className={`transition-transform ${
-                        procesando && processingType === 'salida' ? 'animate-spin' : 'group-hover:-rotate-45'
-                      }`}
-                    />
-                    Registrar Salida
-                  </button>
-                </div>
-              )}
             </div>
 
             <CameraView
@@ -636,6 +565,89 @@ export function CheckIn() {
               onRetryCamera={iniciarCamara}
             />
             <canvas ref={canvasRef} className="hidden" />
+
+            <div className="shrink-0 border-t border-white/5 p-4 sm:p-5 lg:p-6">
+              <div className="mx-auto max-w-sm">
+                {cargandoDetalles ? (
+                  <div className="flex items-center justify-center">
+                    <div className="flex flex-col items-center justify-center gap-3 py-10 text-slate-400">
+                      <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-cyan-400" />
+                      <p className="text-sm">Cargando datos...</p>
+                    </div>
+                  </div>
+                ) : pendienteSeleccionado ? (
+                  <div className="flex flex-col gap-3">
+                    <div className="rounded-2xl border border-blue-400/30 bg-blue-500/10 p-4">
+                      <p className="text-center text-xs text-slate-300">Registrando rostro para:</p>
+                      <p className="mt-1 text-center text-lg font-semibold text-white">{pendienteSeleccionado.nombre_completo}</p>
+                    </div>
+
+                    <button
+                      onClick={registrarFacialPendiente}
+                      disabled={procesando || !streamActivo}
+                      className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-b from-blue-500 to-blue-600 px-4 py-3.5 text-sm font-semibold tracking-wide text-white shadow-lg shadow-blue-600/30 transition hover:from-blue-400 hover:to-blue-500 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
+                    >
+                      <User size={18} />
+                      {procesando ? 'Procesando...' : 'Completar registro facial'}
+                    </button>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        onClick={enviarSolicitudCorreccion}
+                        disabled={solicitudEnviando}
+                        className="flex items-center justify-center gap-2 rounded-xl border border-slate-700 bg-slate-800 px-3 py-2.5 text-xs font-medium text-slate-300 transition hover:border-slate-600 hover:bg-slate-700 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 touch-manipulation"
+                      >
+                        <HelpCircle size={14} />
+                        {solicitudEnviando ? 'Enviando...' : 'Pedir ayuda'}
+                      </button>
+                      <button
+                        onClick={() => setPendienteSeleccionado(null)} // Cancela el modo de registro facial
+                        className="flex items-center justify-center gap-2 rounded-xl border border-slate-700 bg-slate-800 px-3 py-2.5 text-xs font-medium text-slate-300 transition hover:border-slate-600 hover:bg-slate-700 active:scale-[0.98] touch-manipulation"
+                      >
+                        <X size={14} />
+                        Cancelar
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-2">
+                    <div className="grid grid-cols-2 gap-3">
+                      <button
+                        onClick={() => capturarYEnviar('entrada')}
+                        disabled={procesando || !streamActivo}
+                        className="group flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-b from-blue-500 to-blue-600 px-4 py-4 text-sm font-semibold tracking-wide text-white shadow-lg shadow-blue-600/30 transition hover:from-blue-400 hover:to-blue-500 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
+                      >
+                        <RefreshCw
+                          size={16}
+                          className={`transition-transform ${
+                            procesando && processingType === 'entrada' ? 'animate-spin' : 'group-hover:rotate-45'
+                          }`}
+                        />
+                        Entrada
+                      </button>
+                      <button
+                        onClick={() => capturarYEnviar('salida')}
+                        disabled={procesando || !streamActivo}
+                        className="group flex items-center justify-center gap-2 rounded-2xl border border-slate-700 bg-slate-800/80 px-4 py-4 text-sm font-medium tracking-wide text-slate-300 transition hover:border-slate-600 hover:bg-slate-700 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400/60 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
+                      >
+                        <RefreshCw
+                          size={16}
+                          className={`transition-transform ${
+                            procesando && processingType === 'salida' ? 'animate-spin' : 'group-hover:-rotate-45'
+                          }`}
+                        />
+                        Salida
+                      </button>
+                    </div>
+                    <Link
+                      to="/portal"
+                      className="w-full text-center rounded-xl border border-slate-700 bg-slate-800/80 px-3 py-2.5 text-xs font-medium text-slate-300 transition hover:border-slate-600 hover:bg-slate-700 active:scale-[0.98] sm:hidden"
+                    >
+                      Consultar mis registros
+                    </Link>
+                  </div>
+                )}
+              </div>
+            </div>
           </section>
         </main>
       </div>
@@ -658,7 +670,7 @@ export function CheckIn() {
       />
       <Link
         to="/portal"
-        className="fixed bottom-4 right-4 z-20 rounded-2xl border border-white/20 bg-white/10 px-4 py-3 text-sm font-medium text-white shadow-lg backdrop-blur-sm transition hover:bg-white/20 active:scale-95 sm:bottom-5 sm:right-5 lg:bottom-6 lg:right-6"
+        className="hidden sm:block fixed bottom-4 right-4 z-20 rounded-2xl border border-white/20 bg-white/10 px-4 py-3 text-sm font-medium text-white shadow-lg backdrop-blur-sm transition hover:bg-white/20 active:scale-95 sm:bottom-5 sm:right-5 lg:bottom-6 lg:right-6"
       >
         Consultar mis registros
       </Link>
