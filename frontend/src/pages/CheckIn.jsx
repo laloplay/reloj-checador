@@ -466,17 +466,30 @@ export function CheckIn() {
     }
   };
 
+  const confirmarRegistroFacial = () => {
+    setPendienteSeleccionado(empleadoParaConfirmar); // Establece el empleado para el registro facial
+    setConfirmacionModalAbierto(false); // Cierra el modal
+    setEmpleadoParaConfirmar(null); // Limpia el estado del modal
+  };
+
+  const cancelarConfirmacionRegistroFacial = () => {
+    setConfirmacionModalAbierto(false);
+    setEmpleadoParaConfirmar(null);
+    setPendienteSeleccionado(null); // Asegura que no haya empleado seleccionado para registro facial
+  };
+
   const handleSelectPendiente = async (empleado) => {
     setPanelPendientesAbierto(false);
-    setPendienteSeleccionado(null); // Limpia la selección anterior para mostrar el estado de carga
+    setPendienteSeleccionado(null); // Limpia la selección anterior para evitar conflictos
+    setEmpleadoParaConfirmar(null); // Limpia el empleado anterior del modal
     setCargandoDetalles(true);
     try {
       const { data } = await api.get(`/empleados/${empleado.id}`);
-      setPendienteSeleccionado(data);
+      setEmpleadoParaConfirmar(data); // Guarda el empleado para mostrar en el modal
+      setConfirmacionModalAbierto(true); // Abre el modal de confirmación
     } catch (error) {
       console.error('Error al cargar detalles del empleado:', error);
       mostrarResultado(false, 'No se pudieron cargar los detalles del empleado.');
-      setPendienteSeleccionado(null);
     } finally {
       setCargandoDetalles(false);
     }
