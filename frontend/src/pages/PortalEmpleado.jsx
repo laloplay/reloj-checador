@@ -34,7 +34,7 @@ const PortalHeader = () => (
 );
 
 const CamaraStep = ({ onConsultar, procesando, error, streamActivo, cameraError, videoRef, onRetryCamera }) => (
-  <section className="flex h-full min-h-0 flex-1 flex-col overflow-hidden rounded-[1.5rem] border border-white/10 bg-white/5 shadow-[0_28px_80px_rgba(0,0,0,0.28)] backdrop-blur-2xl sm:rounded-[1.75rem]">
+  <section className="flex h-full min-h-0 flex-1 flex-col overflow-hidden rounded-3xl border border-white/10 bg-white/5 shadow-[0_28px_80px_rgba(0,0,0,0.28)] backdrop-blur-2xl sm:rounded-[1.75rem]">
     <div className="grid shrink-0 grid-cols-1 gap-3 border-b border-white/5 p-4 sm:grid-cols-[1fr_auto] sm:items-end sm:gap-4 sm:p-5 lg:p-6">
       <div>
         <div className="inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-500/10 px-3 py-1 text-[10px] uppercase tracking-[0.35em] text-cyan-100">
@@ -49,7 +49,7 @@ const CamaraStep = ({ onConsultar, procesando, error, streamActivo, cameraError,
         <button
           onClick={onConsultar}
           disabled={procesando || !streamActivo}
-          className="group flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-b from-blue-500 to-blue-600 px-6 py-4 text-sm font-semibold tracking-wide text-white shadow-lg shadow-blue-600/30 transition hover:from-blue-400 hover:to-blue-500 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 sm:w-auto"
+          className="group flex w-full items-center justify-center gap-2 rounded-2xl bg-linear-to-b from-blue-500 to-blue-600 px-6 py-4 text-sm font-semibold tracking-wide text-white shadow-lg shadow-blue-600/30 transition hover:from-blue-400 hover:to-blue-500 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 sm:w-auto"
         >
           {procesando ? (
             <LoaderCircle className="animate-spin" size={18} />
@@ -78,7 +78,7 @@ const CamaraStep = ({ onConsultar, procesando, error, streamActivo, cameraError,
           {streamActivo ? 'Cámara activa' : cameraError ? 'Cámara no disponible' : 'Iniciando cámara'}
         </div>
 
-        <div className="relative h-full min-h-[200px] overflow-hidden rounded-[1.25rem] border border-blue-400/20 bg-slate-950/60 shadow-2xl sm:rounded-[1.5rem]">
+        <div className="relative h-full min-h-50 overflow-hidden rounded-[1.25rem] border border-blue-400/20 bg-slate-950/60 shadow-2xl sm:rounded-3xl">
           <video ref={videoRef} autoPlay playsInline muted className="h-full w-full object-cover object-center" />
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_38%,rgba(2,6,23,0.45)_100%)]" />
 
@@ -201,7 +201,7 @@ const DiaRow = ({ dia }) => {
           return <div key={index} className="flex-1" style={{ backgroundColor: config.color }} title={config.label} />;
         })}
       </div>
-      <div className="flex flex-grow items-center justify-between gap-4 px-4 py-3">
+      <div className="flex grow items-center justify-between gap-4 px-4 py-3">
         <div className="flex items-center gap-4">
           <div className="text-center w-10">
             <div className="font-bold text-lg text-white">{dia.dia_num}</div>
@@ -236,9 +236,9 @@ const ResumenStep = ({ data, onCerrar, segundos }) => {
   const { empleado, resumen } = data;
 
   return (
-    <section className="flex h-full min-h-0 flex-1 flex-col overflow-hidden rounded-[1.5rem] border border-white/10 bg-white/5 shadow-[0_28px_80px_rgba(0,0,0,0.28)] backdrop-blur-2xl sm:rounded-[1.75rem]">
+    <section className="flex h-full min-h-0 flex-1 flex-col overflow-hidden rounded-3xl border border-white/10 bg-white/5 shadow-[0_28px_80px_rgba(0,0,0,0.28)] backdrop-blur-2xl sm:rounded-[1.75rem]">
       {/* Header del Resumen */}
-      <div className="flex shrink-0 flex-col justify-between gap-4 border-b border-white/5 bg-white/[0.02] p-4 sm:flex-row sm:items-center sm:p-5 lg:p-6">
+      <div className="flex shrink-0 flex-col justify-between gap-4 border-b border-white/5 bg-white/2 p-4 sm:flex-row sm:items-center sm:p-5 lg:p-6">
         <div className="flex items-center gap-4">
           <div className="flex h-14 w-14 items-center justify-center rounded-full border border-cyan-400/20 bg-cyan-500/10 shadow-inner sm:h-16 sm:w-16">
             <UserCheck className="text-cyan-300" size={28} />

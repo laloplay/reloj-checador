@@ -74,6 +74,13 @@ CREATE TABLE IF NOT EXISTS empleados (
 
 -- Compatibilidad para instalaciones creadas con versiones anteriores del esquema.
 ALTER TABLE turnos ADD COLUMN IF NOT EXISTS hora_fin TIME;
+-- Si la columna 'hora_fin' acaba de ser añadida, poblamos los valores para registros existentes.
+DO $$
+BEGIN
+  UPDATE turnos SET hora_fin = hora_inicio + (duracion_horas * interval '1 hour') WHERE hora_fin IS NULL AND duracion_horas IS NOT NULL;
+EXCEPTION WHEN undefined_column THEN
+  -- Ignorar si la columna duracion_horas no existe, para compatibilidad con esquemas muy viejos.
+END $$;
 ALTER TABLE empleados ADD COLUMN IF NOT EXISTS dia_descanso INTEGER[] DEFAULT '{}';
 DO $$
 BEGIN
@@ -124,20 +131,38 @@ CREATE TABLE IF NOT EXISTS ausencias (
 -- DISPOSITIVOS
 CREATE TABLE IF NOT EXISTS dispositivos (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  fingerprint TEXT NOT NULL,
-  token TEXT UNIQUE NOT NULL,
-  nombre VARCHAR(100),
-  ip VARCHAR(45),
-  navegador TEXT,
+  fingerprint TEXT UNIQUE NOT NULL,
+  nombre_dispositivo VARCHAR(200),
+  ubicacion VARCHAR(200),
   estado VARCHAR(20) NOT NULL DEFAULT 'pendiente' CHECK (estado IN ('pendiente', 'aprobado', 'rechazado')),
   aprobado_por UUID REFERENCES admins(id) ON DELETE SET NULL,
   aprobado_en TIMESTAMPTZ,
   ultimo_acceso TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  sucursal_id UUID REFERENCES sucursales(id) ON DELETE SET NULL
+  sucursal_id UUID REFERENCES sucursales(id) ON DELETE SET NULL,
+  token TEXT,
+  token_expira TIMESTAMPTZ
 );
 
-CREATE UNIQUE INDEX IF NOT EXISTS idx_dispositivos_fingerprint ON dispositivos(fingerprint);
+ALTER TABLE dispositivos ADD COLUMN IF NOT EXISTS nombre_dispositivo VARCHAR(200);
+ALTER TABLE dispositivos ADD COLUMN IF NOT EXISTS ubicacion VARCHAR(200);
+-- Renombrar columnas antiguas y asegurar que `token` sea nullable para corregir el error de registro.
+DO $$
+BEGIN
+  IF EXISTS (SELECT FROM information_schema.columns WHERE table_name = 'dispositivos' AND column_name = 'device_jwt') THEN
+    ALTER TABLE dispositivos RENAME COLUMN device_jwt TO token;
+  END IF;
+  IF EXISTS (SELECT FROM information_schema.columns WHERE table_name = 'dispositivos' AND column_name = 'device_jwt_expira') THEN
+    ALTER TABLE dispositivos RENAME COLUMN device_jwt_expira TO token_expira;
+  END IF;
+  IF NOT EXISTS (SELECT FROM information_schema.columns WHERE table_name = 'dispositivos' AND column_name = 'token') THEN
+    ALTER TABLE dispositivos ADD COLUMN token TEXT;
+  END IF;
+  IF NOT EXISTS (SELECT FROM information_schema.columns WHERE table_name = 'dispositivos' AND column_name = 'token_expira') THEN
+    ALTER TABLE dispositivos ADD COLUMN token_expira TIMESTAMPTZ;
+  END IF;
+  ALTER TABLE dispositivos ALTER COLUMN token DROP NOT NULL;
+END $$;
 
 -- CHECADAS
 CREATE TABLE IF NOT EXISTS checadas (

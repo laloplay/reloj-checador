@@ -1,6 +1,7 @@
-import { useContext, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import {
   Bell,
+  Camera as CameraIcon,
   Camera,
   Clock3,
   RefreshCw,
@@ -10,12 +11,26 @@ import {
   HelpCircle,
   CheckCircle2,
   XCircle,
+  LoaderCircle,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import api from '../services/api';
 import { useClock } from '../hooks/useClock';
+import { useCameraPermission } from '../hooks/useCameraPermission';
 import { Logo } from '../components/Logo';
-import { AuthContext } from '../context/AuthContext';
+
+const StatusDisplay = ({ icon, title, message, children }) => (
+  <div className="flex h-screen w-full items-center justify-center bg-slate-950 text-white">
+    <div className="max-w-sm text-center p-8">
+      <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-white/5">
+        {icon}
+      </div>
+      <h1 className="text-2xl font-semibold text-white">{title}</h1>
+      <p className="mt-2 text-slate-400">{message}</p>
+      {children && <div className="mt-6">{children}</div>}
+    </div>
+  </div>
+);
 
 const AppHeader = ({ onOpenPendientes, pendientesCount }) => (
   <header className="flex shrink-0 items-center justify-between gap-3 rounded-[1.25rem] border border-white/10 bg-white/5 px-3 py-2.5 shadow-lg shadow-black/20 backdrop-blur-2xl sm:rounded-[1.75rem] sm:px-5 sm:py-3">
@@ -208,6 +223,8 @@ const PendientesSidePanel = ({ isOpen, onClose, pendientes, onSelect, isLoading 
 );
 
 export function CheckIn() {
+  const { permission, requestPermission } = useCameraPermission();
+
   const { hora, fecha } = useClock();
 
   const [procesando, setProcesando] = useState(false);
@@ -225,20 +242,20 @@ export function CheckIn() {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
 
-  const iniciarCamara = async () => {
+  const iniciarCamara = useCallback(async () => {
+    if (cameraError) setCameraError(false);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: {width:{ ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' } });
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         setStreamActivo(true);
-        setCameraError(false);
       }
     } catch (error) {
       console.error('Error al acceder a la cámara:', error);
       setStreamActivo(false);
       setCameraError(true);
     }
-  };
+  }, [cameraError]);
 
   useEffect(() => {
     const cargarPendientes = async () => {
@@ -252,17 +269,17 @@ export function CheckIn() {
         setCargandoPendientes(false);
       }
     };
-
-    iniciarCamara();
     cargarPendientes();
 
+    if (permission === 'granted') {
+      iniciarCamara();
+    }
     return () => {
       if (videoRef.current?.srcObject) {
         videoRef.current.srcObject.getTracks().forEach((track) => track.stop());
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [permission, iniciarCamara]);
 
   const mostrarResultado = (exito, mensaje, extras = {}) => {
     setResultado({ exito, mensaje, ...extras });
@@ -382,6 +399,38 @@ export function CheckIn() {
     }
   };
 
+  if (permission === 'cargando') {
+    return <StatusDisplay
+      icon={<LoaderCircle className="animate-spin text-cyan-400" size={32} />}
+      title="Verificando cámara..."
+      message="Un momento, por favor."
+    />;
+  }
+
+  if (permission === 'denied') {
+    return <StatusDisplay
+      icon={<AlertTriangle className="text-red-400" size={32} />}
+      title="Acceso a la cámara denegado"
+      message="Para poder checar, necesitas habilitar el permiso de la cámara en la configuración de tu navegador."
+    />;
+  }
+
+  if (permission === 'prompt') {
+    return <StatusDisplay
+      icon={<CameraIcon size={32} className="text-cyan-400" />}
+      title="Se necesita la cámara"
+      message="Para registrar tu asistencia, necesitamos acceso a la cámara."
+    >
+      <button
+        onClick={requestPermission}
+        className="w-full max-w-xs bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-3 px-4 rounded-md transition-colors"
+      >
+        Activar Cámara
+      </button>
+    </StatusDisplay>;
+  }
+
+  // Si llegamos aquí, el permiso está concedido (permission === 'granted')
   return (
     <div
       className="relative flex h-screen w-full select-none flex-col overflow-hidden bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.22),transparent_30%),radial-gradient(circle_at_bottom_right,rgba(14,165,233,0.18),transparent_25%),linear-gradient(180deg,#020617_0%,#07111f_60%,#020617_100%)] text-white [-webkit-tap-highlight-color:transparent]"

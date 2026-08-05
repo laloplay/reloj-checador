@@ -41,6 +41,8 @@ const verifyAdmin = async (req, res, next) => {
   }
 };
 
+const DEVICE_JWT_SECRET = process.env.DEVICE_JWT_SECRET || 'tu-super-secreto-para-dispositivos';
+
 const allowAdminOrDevice = async (req, res, next) => {
   const authHeader = req.headers.authorization || req.headers.Authorization;
   if (authHeader && authHeader.startsWith('Bearer ')) {
@@ -55,24 +57,23 @@ const allowAdminOrDevice = async (req, res, next) => {
     }
   }
 
-  const deviceToken = req.headers['device-token'] || req.headers['Device-Token'];
-  if (!deviceToken) {
-    return res.status(403).json({ message: 'device-token header missing' });
+  const deviceJwt = req.headers['device-token'];
+  if (!deviceJwt) {
+    return res.status(401).json({ message: 'Falta token de administrador o de dispositivo' });
   }
 
   try {
-    const { rows } = await pool.query(
-      'SELECT id, estado FROM dispositivos WHERE token = $1',
-      [deviceToken]
-    );
+    const decoded = jwt.verify(deviceJwt, DEVICE_JWT_SECRET);
+    if (decoded.tipo !== 'device-auth') throw new Error('Tipo de token inválido');
 
+    const { rows } = await pool.query('SELECT id, estado FROM dispositivos WHERE id = $1', [decoded.dispositivo_id]);
     if (rows.length === 0) {
       return res.status(403).json({ message: 'Dispositivo no encontrado' });
     }
 
     const dispositivo = rows[0];
     if (dispositivo.estado !== 'aprobado') {
-      return res.status(403).json({ message: 'Dispositivo no aprobado' });
+      return res.status(403).json({ message: `Dispositivo no aprobado. Estado: ${dispositivo.estado}` });
     }
 
     await pool.query('UPDATE dispositivos SET ultimo_acceso = NOW() WHERE id = $1', [dispositivo.id]);
@@ -80,6 +81,9 @@ const allowAdminOrDevice = async (req, res, next) => {
     req.device = dispositivo;
     next();
   } catch (error) {
+    if (error instanceof jwt.TokenExpiredError || error instanceof jwt.JsonWebTokenError) {
+      return res.status(403).json({ message: 'Token de dispositivo inválido o expirado.' });
+    }
     console.error('allowAdminOrDevice error:', error);
     res.status(500).json({ message: 'Error interno al validar el acceso' });
   }

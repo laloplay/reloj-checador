@@ -116,11 +116,11 @@ export function AdminDispositivos() {
                   <th className="text-left py-4 px-4 text-gray-300 font-medium text-sm uppercase tracking-widest">
                     Dispositivo
                   </th>
-                  <th className="text-left py-4 px-4 text-gray-300 font-medium text-sm uppercase tracking-widest">
+                  <th className="text-left py-4 px-4 text-gray-300 font-medium text-sm uppercase tracking-widest hidden md:table-cell">
                     Sucursal
                   </th>
-                  <th className="text-left py-4 px-4 text-gray-300 font-medium text-sm uppercase tracking-widest">
-                    IP
+                  <th className="text-left py-4 px-4 text-gray-300 font-medium text-sm uppercase tracking-widest hidden lg:table-cell">
+                    Ubicación
                   </th>
                   <th className="text-left py-4 px-4 text-gray-300 font-medium text-sm uppercase tracking-widest">
                     Estado
@@ -142,16 +142,16 @@ export function AdminDispositivos() {
                     className="border-b border-blue-900/10 hover:bg-blue-900/5 transition"
                   >
                     <td className="py-4 px-4">
-                      <div className="text-white font-medium">{dispositivo.nombre || 'N/A'}</div>
+                      <div className="text-white font-medium">{dispositivo.nombre_dispositivo || 'Sin nombre'}</div>
                       <div className="text-gray-500 text-sm mt-1 font-mono">
                         {dispositivo.fingerprint.substring(0, 12)}...
                       </div>
                     </td>
-                    <td className="py-4 px-4 text-gray-400 text-sm">
+                    <td className="py-4 px-4 text-gray-400 text-sm hidden md:table-cell">
                       {sucursalAsignada?.nombre || <span className="text-gray-500">Sin asignar</span>}
                     </td>
-                    <td className="py-4 px-4 text-gray-400 font-mono text-sm">
-                      {dispositivo.ip || 'N/A'}
+                    <td className="py-4 px-4 text-gray-400 text-sm hidden lg:table-cell">
+                      {dispositivo.ubicacion || 'N/A'}
                     </td>
                     <td className="py-4 px-4">
                       <span

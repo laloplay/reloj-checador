@@ -6,6 +6,7 @@ import { DevicePending } from './pages/DevicePending';
 import { PortalEmpleado } from './pages/PortalEmpleado';
 import { AdminLogin } from './pages/Admin/Login';
 
+
 // Admin Pages
 import { AdminDashboard } from './pages/Admin/Dashboard';
 import { AdminReportes } from './pages/Admin/Reportes';
