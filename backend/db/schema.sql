@@ -147,6 +147,7 @@ CREATE TABLE IF NOT EXISTS dispositivos (
 ALTER TABLE dispositivos ADD COLUMN IF NOT EXISTS nombre_dispositivo VARCHAR(200);
 ALTER TABLE dispositivos ADD COLUMN IF NOT EXISTS ubicacion VARCHAR(200);
 -- Renombrar columnas antiguas y asegurar que `token` sea nullable para corregir el error de registro.
+ALTER TABLE dispositivos ADD COLUMN IF NOT EXISTS ultimo_acceso TIMESTAMPTZ;
 DO $$
 BEGIN
   IF EXISTS (SELECT FROM information_schema.columns WHERE table_name = 'dispositivos' AND column_name = 'device_jwt') THEN

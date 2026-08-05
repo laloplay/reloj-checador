@@ -24,7 +24,9 @@ jobs:
             # Aplicar los cambios del esquema a la base de datos existente.
             # Esto es necesario porque docker-entrypoint-initdb.d solo se ejecuta la primera vez.
             echo "Aplicando actualizaciones al esquema de la base de datos..."
-            docker compose exec -T postgres psql -U laloplay -d reloj_checador -f /docker-entrypoint-initdb.d/01-schema.sql
+            # Usamos el usuario 'postgres' que es el default y agregamos ON_ERROR_STOP para que el deploy falle si hay un error de SQL.
+            # Si en tu .env de producción usas un DB_USER o DB_NAME diferente, ajústalo aquí.
+            docker compose exec -T postgres psql -U postgres -d reloj_checador -f /docker-entrypoint-initdb.d/01-schema.sql -v ON_ERROR_STOP=1
             
             # Reconstruir backend y frontend con el nuevo código (sin tocar BD)
             docker compose up -d --build --no-deps backend frontend
