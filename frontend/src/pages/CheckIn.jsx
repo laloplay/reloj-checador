@@ -32,6 +32,87 @@ const StatusDisplay = ({ icon, title, message, children }) => (
   </div>
 );
 
+// Nuevo componente para el modal de confirmación de registro facial
+const ConfirmacionRegistroFacialModal = ({ isOpen, onClose, empleado, onConfirm, cargandoDetalles }) => {
+  if (!isOpen || !empleado) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50">
+      <div className="bg-[#111217] border border-blue-400/10 rounded-2xl w-full max-w-md overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center justify-between px-7 pt-6 pb-5 border-b border-blue-400/10">
+          <div>
+            <p className="text-[11px] uppercase tracking-widest text-gray-500 font-medium mb-0.5">
+              Confirmar registro facial
+            </p>
+            <h2 className="text-lg font-light text-gray-100 tracking-wide m-0">
+              {empleado.nombre_completo}
+            </h2>
+          </div>
+          <button
+            onClick={onClose}
+            className="w-8 h-8 flex items-center justify-center rounded-lg bg-white/5 border border-white/10 text-gray-400 hover:text-gray-200 hover:bg-white/10 transition"
+          >
+            <X size={16} />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="px-7 py-5 flex flex-col gap-4">
+          {cargandoDetalles ? (
+            <div className="flex items-center justify-center py-10 text-slate-400">
+              <LoaderCircle className="animate-spin" size={32} />
+              <p className="text-sm ml-3">Cargando detalles...</p>
+            </div>
+          ) : (
+            <div className="rounded-2xl border border-blue-400/30 bg-blue-500/10 p-4">
+              <p className="text-center text-xs text-slate-300">Confirmar datos para registrar rostro:</p>
+              <p className="mt-1 text-center text-lg font-semibold text-white">{empleado.nombre_completo}</p>
+              <div className="mt-4 space-y-2 border-t border-blue-400/10 pt-3 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-slate-400">Puesto:</span>
+                  <span className="font-medium text-white">{empleado.puesto_nombre || 'No asignado'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-400">Turno:</span>
+                  <span className="font-medium text-white">{empleado.turno_nombre || 'No asignado'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-400">Ingreso:</span>
+                  <span className="font-medium text-white">
+                    {empleado.fecha_ingreso
+                      ? new Date(empleado.fecha_ingreso).toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' })
+                      : 'No asignada'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="px-7 pb-6 pt-4 border-t border-blue-400/10 flex gap-3">
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex-1 py-2.5 bg-transparent border border-white/10 rounded-lg text-gray-400 text-sm hover:bg-white/5 transition"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={cargandoDetalles}
+            className="flex-2 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
+          >
+            Aceptar y Abrir Cámara
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const AppHeader = ({ onOpenPendientes, pendientesCount }) => (
   <header className="flex shrink-0 items-center justify-between gap-3 rounded-[1.25rem] border border-white/10 bg-white/5 px-3 py-2.5 shadow-lg shadow-black/20 backdrop-blur-2xl sm:rounded-[1.75rem] sm:px-5 sm:py-3">
     <Logo size="header" />
@@ -237,6 +318,8 @@ export function CheckIn() {
   const [pendienteSeleccionado, setPendienteSeleccionado] = useState(null);
   const [solicitudEnviando, setSolicitudEnviando] = useState(false);
   const [cargandoPendientes, setCargandoPendientes] = useState(false);
+  const [empleadoParaConfirmar, setEmpleadoParaConfirmar] = useState(null); // Empleado para mostrar en el modal
+  const [confirmacionModalAbierto, setConfirmacionModalAbierto] = useState(false); // Estado del modal de confirmación
   const [cargandoDetalles, setCargandoDetalles] = useState(false);
 
   const videoRef = useRef(null);
@@ -570,6 +653,14 @@ export function CheckIn() {
         isLoading={cargandoPendientes}
       />
 
+      {/* Modal de confirmación de registro facial */}
+      <ConfirmacionRegistroFacialModal
+        isOpen={confirmacionModalAbierto}
+        onClose={cancelarConfirmacionRegistroFacial}
+        empleado={empleadoParaConfirmar}
+        onConfirm={confirmarRegistroFacial}
+        cargandoDetalles={cargandoDetalles}
+      />
       <Link
         to="/portal"
         className="fixed bottom-4 right-4 z-20 rounded-2xl border border-white/20 bg-white/10 px-4 py-3 text-sm font-medium text-white shadow-lg backdrop-blur-sm transition hover:bg-white/20 active:scale-95 sm:bottom-5 sm:right-5 lg:bottom-6 lg:right-6"
