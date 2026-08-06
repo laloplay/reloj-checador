@@ -16,6 +16,5 @@ pool.on('connect', (client) => {
   // Usa la variable de entorno PGTZ. Si no existe, usa 'UTC' como fallback.
   client.query(`SET TIME ZONE '${process.env.PGTZ || 'UTC'}'`);
 });
-// --- FIN DE LA CORRECCIÓN ---
 
 module.exports = pool;
