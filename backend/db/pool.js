@@ -8,13 +8,12 @@ const pool = new Pool({
   port: process.env.DB_PORT || 5432,
 });
 
-// --- INICIO DE LA CORRECCIÓN ---
-// Este es el cambio clave. Cada vez que se establece una nueva conexión
-// con la base de datos, se ejecuta este comando para establecer la zona horaria
-// correcta para la sesión.
+// Mantiene la misma zona horaria del negocio en todas las conexiones a Postgres.
+// Esto evita que en producción las fechas se interpreten en UTC mientras el resto
+// de la aplicación espera hora local.
 pool.on('connect', (client) => {
-  // Usa la variable de entorno PGTZ. Si no existe, usa 'UTC' como fallback.
-  client.query(`SET TIME ZONE '${process.env.PGTZ || 'UTC'}'`);
+  const timeZone = process.env.PGTZ || 'America/Mexico_City';
+  client.query(`SET TIME ZONE '${timeZone}'`);
 });
 
 module.exports = pool;

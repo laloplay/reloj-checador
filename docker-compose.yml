@@ -6,6 +6,7 @@ services:
     container_name: reloj-checador-db
     restart: unless-stopped
     environment:
+      TZ: America/Mexico_City
       POSTGRES_DB: ${DB_NAME}
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
@@ -26,6 +27,9 @@ services:
     restart: unless-stopped
     env_file:
       - .env
+    environment:
+      TZ: America/Mexico_City
+      PGTZ: America/Mexico_City
     ports:
       - "${BACKEND_PORT}:${BACKEND_PORT}"
     depends_on:
