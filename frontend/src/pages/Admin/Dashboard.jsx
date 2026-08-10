@@ -1,8 +1,84 @@
 import { useEffect, useState, useContext } from 'react';
 import { Link } from 'react-router-dom';
-import { Users, Smartphone, Clock, BarChart3, CheckCircle, AlertCircle } from 'lucide-react';
+import {
+  AlertTriangle,
+  ArrowRight,
+  BarChart3,
+  CheckCircle2,
+  Clock3,
+  LayoutDashboard,
+  Smartphone,
+  Users,
+  Users2,
+} from 'lucide-react';
 import api from '../../services/api';
 import { AuthContext } from '../../context/AuthContext';
+
+const quickActions = [
+  {
+    to: '/admin/reportes',
+    label: 'Reportes',
+    description: 'Ver actividad y métricas',
+    icon: BarChart3,
+    accent: 'cyan',
+  },
+  {
+    to: '/admin/empleados',
+    label: 'Empleados',
+    description: 'Gestionar personal activo',
+    icon: Users,
+    accent: 'blue',
+  },
+  {
+    to: '/admin/dispositivos',
+    label: 'Dispositivos',
+    description: 'Aprobar o rechazar equipos',
+    icon: Smartphone,
+    accent: 'rose',
+  },
+  {
+    to: '/admin/registros',
+    label: 'Registros',
+    description: 'Consultar entradas y salidas',
+    icon: Clock3,
+    accent: 'amber',
+  },
+  {
+    to: '/admin/empleados',
+    label: 'Empleados',
+    description: 'Administrar personal',
+    icon: Users2,
+    accent: 'blue',
+  },
+];
+
+const accentStyles = {
+  blue: {
+    card: 'border-blue-400/15 bg-blue-500/8 shadow-blue-950/30',
+    icon: 'text-blue-300 bg-blue-500/10 border-blue-400/20',
+    value: 'text-blue-300',
+  },
+  rose: {
+    card: 'border-rose-400/15 bg-rose-500/8 shadow-rose-950/30',
+    icon: 'text-rose-300 bg-rose-500/10 border-rose-400/20',
+    value: 'text-rose-300',
+  },
+  emerald: {
+    card: 'border-emerald-400/15 bg-emerald-500/8 shadow-emerald-950/30',
+    icon: 'text-emerald-300 bg-emerald-500/10 border-emerald-400/20',
+    value: 'text-emerald-300',
+  },
+  amber: {
+    card: 'border-amber-400/15 bg-amber-500/8 shadow-amber-950/30',
+    icon: 'text-amber-300 bg-amber-500/10 border-amber-400/20',
+    value: 'text-amber-300',
+  },
+  cyan: {
+    card: 'border-cyan-400/15 bg-cyan-500/8 shadow-cyan-950/30',
+    icon: 'text-cyan-300 bg-cyan-500/10 border-cyan-400/20',
+    value: 'text-cyan-300',
+  },
+};
 
 export function AdminDashboard() {
   const auth = useContext(AuthContext);
@@ -50,189 +126,203 @@ export function AdminDashboard() {
 
   if (cargando) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-neutral-950">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-          <p className="text-gray-400 tracking-wide">Cargando dashboard...</p>
+      <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-slate-950">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.16),transparent_34%),radial-gradient(circle_at_top_right,rgba(59,130,246,0.16),transparent_28%),radial-gradient(circle_at_bottom,rgba(15,23,42,0.9),rgba(2,6,23,1))]" />
+        <div className="relative text-center">
+          <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-b-2 border-cyan-400" />
+          <p className="tracking-wide text-slate-300">Cargando dashboard...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-neutral-950 p-8">
-      <div className="max-w-7xl mx-auto">
-        {/* Saludo */}
-        <div className="mb-12">
-          <h1 className="text-5xl font-light text-white tracking-wide">
-            Bienvenido, <span className="font-semibold">{auth.admin?.username}</span>
-          </h1>
-          <p className="text-gray-400 text-sm mt-2">Panel de control de Reloj Checador</p>
-        </div>
+    <div className="relative min-h-screen overflow-hidden bg-slate-950 text-white">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.14),transparent_32%),radial-gradient(circle_at_top_right,rgba(59,130,246,0.18),transparent_30%),radial-gradient(circle_at_bottom,rgba(15,23,42,0.96),rgba(2,6,23,1))]" />
+      <div className="absolute inset-0 opacity-[0.03] bg-[linear-gradient(rgba(255,255,255,0.9)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.9)_1px,transparent_1px)] bg-size-[36px_36px]" />
 
-        {/* Cards de resumen */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
-          {/* Empleados activos */}
-          <div className="bg-neutral-900 border border-blue-900/30 rounded-lg p-6 hover:border-blue-600/50 transition">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-400 text-sm uppercase tracking-wide">Empleados activos</p>
-                <p className="text-4xl font-light text-blue-400 mt-3">
-                  {resumen.totalEmpleados}
-                </p>
+      <div className="relative mx-auto flex max-w-7xl flex-col gap-6 px-4 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
+        <section className="overflow-hidden rounded-[1.75rem] border border-white/10 bg-white/5 p-5 shadow-[0_24px_80px_rgba(0,0,0,0.28)] backdrop-blur-2xl sm:p-6 lg:p-8">
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+            <div className="max-w-2xl">
+              <div className="inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-500/10 px-3 py-1 text-[10px] uppercase tracking-[0.35em] text-cyan-100 sm:text-[11px]">
+                <LayoutDashboard size={12} />
+                Panel de control
               </div>
-              <Users className="text-blue-500 opacity-20" size={56} />
+              <h1 className="mt-4 text-3xl font-medium tracking-tight text-white sm:text-4xl lg:text-5xl">
+                Bienvenido, <span className="text-cyan-300">{auth.admin?.username}</span>
+              </h1>
+              <p className="mt-3 max-w-xl text-sm text-slate-400 sm:text-base lg:text-lg">
+                Aquí puedes ver lo más importante del sistema sin complicarte.
+              </p>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2 lg:min-w-md lg:grid-cols-2">
+              <div className="rounded-2xl border border-white/10 bg-slate-950/55 px-4 py-3">
+                <p className="text-[11px] uppercase tracking-[0.3em] text-slate-400">Hoy</p>
+                <p className="mt-2 text-sm font-medium text-white">{resumen.checadasHoy} checadas</p>
+              </div>
+              <div className="rounded-2xl border border-white/10 bg-slate-950/55 px-4 py-3">
+                <p className="text-[11px] uppercase tracking-[0.3em] text-slate-400">Empleados</p>
+                <p className="mt-2 text-sm font-medium text-white">{resumen.totalEmpleados} activos</p>
+              </div>
+              <div className="rounded-2xl border border-white/10 bg-slate-950/55 px-4 py-3">
+                <p className="text-[11px] uppercase tracking-[0.3em] text-slate-400">Dispositivos</p>
+                <p className="mt-2 text-sm font-medium text-white">{resumen.dispositivosPendientes} pendientes</p>
+              </div>
+              <div className="rounded-2xl border border-white/10 bg-slate-950/55 px-4 py-3">
+                <p className="text-[11px] uppercase tracking-[0.3em] text-slate-400">Faciales</p>
+                <p className="mt-2 text-sm font-medium text-white">{resumen.facialesPendientes} pendientes</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <div className="mb-4 flex items-end justify-between gap-3">
+            <div>
+              <h2 className="text-xl font-medium tracking-tight text-white sm:text-2xl">Resumen rápido</h2>
+              <p className="mt-1 text-sm text-slate-400">Solo lo que necesitas revisar primero</p>
             </div>
           </div>
 
-          {/* Dispositivos pendientes */}
-          <div
-            className={`rounded-lg p-6 transition border ${
-              resumen.dispositivosPendientes > 0
-                ? 'bg-red-900/20 border-red-600/50 hover:border-red-500'
-                : 'bg-neutral-900 border-green-900/30 hover:border-green-600/50'
-            }`}
-          >
-            <div className="flex items-center justify-between relative">
-              <div>
-                <p className="text-gray-400 text-sm uppercase tracking-wide">Dispositivos pendientes</p>
-                <p
-                  className={`text-4xl font-light mt-3 ${
-                    resumen.dispositivosPendientes > 0 ? 'text-red-400' : 'text-green-400'
-                  }`}
-                >
-                  {resumen.dispositivosPendientes}
-                </p>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <article className="rounded-3xl border border-white/10 bg-white/5 p-5 shadow-[0_18px_60px_rgba(0,0,0,0.18)] backdrop-blur-xl">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-[11px] uppercase tracking-[0.3em] text-slate-400">Checadas de hoy</p>
+                  <p className="mt-3 text-5xl font-light text-cyan-300">{resumen.checadasHoy}</p>
+                  <p className="mt-2 text-sm text-slate-400">Total de entradas y salidas registradas.</p>
+                </div>
+                <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-cyan-400/20 bg-cyan-500/10 text-cyan-300">
+                  <Clock3 size={24} />
+                </div>
               </div>
-              <div className="relative">
-                {resumen.dispositivosPendientes > 0 && (
-                  <div className="absolute -top-2 -right-2 bg-red-600 text-white text-xs font-bold rounded-full h-6 w-6 flex items-center justify-center">
-                    {resumen.dispositivosPendientes}
-                  </div>
-                )}
-                <Smartphone
-                  className={`opacity-20 ${
-                    resumen.dispositivosPendientes > 0 ? 'text-red-500' : 'text-green-500'
-                  }`}
-                  size={56}
-                />
+            </article>
+
+            <article className="rounded-3xl border border-white/10 bg-white/5 p-5 shadow-[0_18px_60px_rgba(0,0,0,0.18)] backdrop-blur-xl">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-[11px] uppercase tracking-[0.3em] text-slate-400">Empleados activos</p>
+                  <p className="mt-3 text-5xl font-light text-blue-300">{resumen.totalEmpleados}</p>
+                  <p className="mt-2 text-sm text-slate-400">Personal que puede trabajar y registrar asistencia.</p>
+                </div>
+                <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-blue-400/20 bg-blue-500/10 text-blue-300">
+                  <Users size={24} />
+                </div>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section className="grid gap-4 lg:grid-cols-[1.3fr_0.7fr]">
+          <div className="rounded-3xl border border-white/10 bg-white/5 p-5 shadow-[0_18px_60px_rgba(0,0,0,0.2)] backdrop-blur-xl sm:p-6">
+            <div className="flex items-end justify-between gap-3">
+              <div>
+                <h2 className="text-xl font-medium tracking-tight text-white sm:text-2xl">Ir a una sección</h2>
+                <p className="mt-1 text-sm text-slate-400">Botones grandes para entrar sin perderte</p>
               </div>
             </div>
-            {resumen.dispositivosPendientes > 0 && (
-              <div className="mt-4 p-3 bg-red-900/30 border border-red-600/30 rounded flex items-center gap-2 text-red-400 text-sm">
-                <AlertCircle size={16} />
-                <span>Requiere aprobación</span>
-              </div>
-            )}
-          </div>
 
-          {/* Checadas hoy */}
-          <div className="bg-neutral-900 border border-green-900/30 rounded-lg p-6 hover:border-green-600/50 transition">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-400 text-sm uppercase tracking-wide">Checadas hoy</p>
-                <p className="text-4xl font-light text-green-400 mt-3">
-                  {resumen.checadasHoy}
-                </p>
-              </div>
-              <CheckCircle className="text-green-500 opacity-20" size={56} />
+            <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
+              {quickActions.map((action) => {
+                const Icon = action.icon;
+                const accent = accentStyles[action.accent] || accentStyles.blue;
+
+                return (
+                  <Link
+                    key={action.to}
+                    to={action.to}
+                    className="group rounded-[1.25rem] border border-white/10 bg-slate-950/50 p-4 transition duration-300 hover:-translate-y-1 hover:border-cyan-400/25 hover:bg-slate-950/80"
+                  >
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="flex items-center gap-3">
+                        <div className={`flex h-11 w-11 items-center justify-center rounded-2xl border ${accent.icon}`}>
+                          <Icon size={20} />
+                        </div>
+                        <div>
+                          <h3 className="font-medium text-white">{action.label}</h3>
+                          <p className="mt-1 text-sm text-slate-400">{action.description}</p>
+                        </div>
+                      </div>
+                      <ArrowRight size={18} className="text-slate-500 transition group-hover:translate-x-1 group-hover:text-cyan-300" />
+                    </div>
+                  </Link>
+                );
+              })}
             </div>
           </div>
 
-          <div
-            className={`rounded-lg p-6 transition border ${
-              resumen.facialesPendientes > 0
-                ? 'bg-rose-900/20 border-rose-600/50 hover:border-rose-500'
-                : 'bg-neutral-900 border-neutral-800 hover:border-neutral-700'
-            }`}
-          >
-            <div className="flex items-center justify-between relative">
-              <div>
-                <p className="text-gray-400 text-sm uppercase tracking-wide">Faciales pendientes</p>
-                <p className={`text-4xl font-light mt-3 ${resumen.facialesPendientes > 0 ? 'text-rose-400' : 'text-gray-400'}`}>
-                  {resumen.facialesPendientes}
-                </p>
+          <div className="grid gap-4">
+            <div className="rounded-3xl border border-rose-400/15 bg-rose-500/8 p-5 shadow-[0_18px_60px_rgba(127,29,29,0.16)] backdrop-blur-xl sm:p-6">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-[11px] uppercase tracking-[0.3em] text-rose-200/80">Revisar dispositivos</p>
+                  <p className="mt-3 text-4xl font-light text-rose-300">{resumen.dispositivosPendientes}</p>
+                </div>
+                <Smartphone size={28} className="text-rose-200/80" />
               </div>
-              <AlertCircle className={`opacity-20 ${resumen.facialesPendientes > 0 ? 'text-rose-500' : 'text-gray-500'}`} size={56} />
+              <p className="mt-4 text-sm text-rose-100/80">
+                {resumen.dispositivosPendientes > 0
+                  ? 'Hay equipos esperando aprobación para operar en sucursal.'
+                  : 'No hay dispositivos en espera de aprobación.'}
+              </p>
             </div>
-            {resumen.facialesPendientes > 0 && (
-              <div className="mt-4 p-3 bg-rose-900/30 border border-rose-600/30 rounded flex items-center gap-2 text-rose-300 text-sm">
-                <AlertCircle size={16} />
-                <span>Hay empleados que deben completar su registro facial</span>
+
+            <div className="rounded-3xl border border-amber-400/15 bg-amber-500/8 p-5 shadow-[0_18px_60px_rgba(120,53,15,0.16)] backdrop-blur-xl sm:p-6">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-[11px] uppercase tracking-[0.3em] text-amber-100/80">Faltan rostros</p>
+                  <p className="mt-3 text-4xl font-light text-amber-300">{resumen.facialesPendientes}</p>
+                </div>
+                <CheckCircle2 size={28} className="text-amber-100/80" />
               </div>
-            )}
+              <p className="mt-4 text-sm text-amber-50/80">
+                {resumen.facialesPendientes > 0
+                  ? 'Hay empleados que deben completar su registro facial.'
+                  : 'No existen registros faciales pendientes.'}
+              </p>
+            </div>
           </div>
-        </div>
+        </section>
 
-        {/* Accesos rápidos */}
-        <div className="mb-12">
-          <h2 className="text-2xl font-light text-white tracking-wide mb-6">Accesos rápidos</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* Empleados */}
-            <Link
-              to="/admin/empleados"
-              className="bg-neutral-900 border border-blue-900/30 rounded-lg p-6 hover:border-blue-600 hover:bg-blue-900/10 transition group"
-            >
-              <div className="flex flex-col items-center text-center">
-                <Users className="text-blue-400 group-hover:text-blue-300 mb-3" size={32} />
-                <h3 className="text-white font-medium">Empleados</h3>
-                <p className="text-gray-500 text-xs mt-1">Gestionar equipo</p>
-              </div>
-            </Link>
+        <section className="rounded-3xl border border-white/10 bg-white/5 p-5 shadow-[0_18px_60px_rgba(0,0,0,0.2)] backdrop-blur-xl sm:p-6">
+          <div className="flex items-end justify-between gap-3">
+            <div>
+              <h2 className="text-xl font-medium tracking-tight text-white sm:text-2xl">Qué revisar primero</h2>
+              <p className="mt-1 text-sm text-slate-400">Orden simple para no perder tiempo</p>
+            </div>
+          </div>
 
-            {/* Dispositivos */}
+          <div className="mt-5 grid gap-3 sm:grid-cols-3">
             <Link
               to="/admin/dispositivos"
-              className={`rounded-lg p-6 transition group border ${
-                resumen.dispositivosPendientes > 0
-                  ? 'bg-red-900/10 border-red-600/30 hover:border-red-500'
-                  : 'bg-neutral-900 border-green-900/30 hover:border-green-600'
-              }`}
+              className="rounded-[1.25rem] border border-white/10 bg-slate-950/50 p-4 transition hover:border-cyan-400/25 hover:bg-slate-950/80"
             >
-              <div className="flex flex-col items-center text-center relative">
-                {resumen.dispositivosPendientes > 0 && (
-                  <div className="absolute -top-2 -right-2 bg-red-600 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
-                    {resumen.dispositivosPendientes}
-                  </div>
-                )}
-                <Smartphone
-                  className={`mb-3 ${
-                    resumen.dispositivosPendientes > 0
-                      ? 'text-red-400 group-hover:text-red-300'
-                      : 'text-green-400 group-hover:text-green-300'
-                  }`}
-                  size={32}
-                />
-                <h3 className="text-white font-medium">Dispositivos</h3>
-                <p className="text-gray-500 text-xs mt-1">Aprobar/Rechazar</p>
-              </div>
+              <p className="text-[11px] uppercase tracking-[0.3em] text-slate-400">Primero</p>
+              <h3 className="mt-3 text-lg font-medium text-white">Dispositivos</h3>
+              <p className="mt-2 text-sm text-slate-400">Revisa aprobaciones pendientes.</p>
             </Link>
 
-            {/* Turnos */}
             <Link
-              to="/admin/turnos"
-              className="bg-neutral-900 border border-amber-900/30 rounded-lg p-6 hover:border-amber-600 hover:bg-amber-900/10 transition group"
+              to="/admin/empleados"
+              className="rounded-[1.25rem] border border-white/10 bg-slate-950/50 p-4 transition hover:border-cyan-400/25 hover:bg-slate-950/80"
             >
-              <div className="flex flex-col items-center text-center">
-                <Clock className="text-amber-400 group-hover:text-amber-300 mb-3" size={32} />
-                <h3 className="text-white font-medium">Turnos</h3>
-                <p className="text-gray-500 text-xs mt-1">Configurar turnos</p>
-              </div>
+              <p className="text-[11px] uppercase tracking-[0.3em] text-slate-400">Después</p>
+              <h3 className="mt-3 text-lg font-medium text-white">Empleados</h3>
+              <p className="mt-2 text-sm text-slate-400">Valida perfiles y faciales.</p>
             </Link>
 
-            {/* Reportes */}
             <Link
               to="/admin/reportes"
-              className="bg-neutral-900 border border-purple-900/30 rounded-lg p-6 hover:border-purple-600 hover:bg-purple-900/10 transition group"
+              className="rounded-[1.25rem] border border-white/10 bg-slate-950/50 p-4 transition hover:border-cyan-400/25 hover:bg-slate-950/80"
             >
-              <div className="flex flex-col items-center text-center">
-                <BarChart3 className="text-purple-400 group-hover:text-purple-300 mb-3" size={32} />
-                <h3 className="text-white font-medium">Reportes</h3>
-                <p className="text-gray-500 text-xs mt-1">Ver estadísticas</p>
-              </div>
+              <p className="text-[11px] uppercase tracking-[0.3em] text-slate-400">Consulta</p>
+              <h3 className="mt-3 text-lg font-medium text-white">Reportes</h3>
+              <p className="mt-2 text-sm text-slate-400">Confirma que todo cuadra.</p>
             </Link>
           </div>
-        </div>
+        </section>
       </div>
     </div>
   );
