@@ -79,7 +79,18 @@ router.post('/', verifyDevice, async (req, res) => {
         }
 
         const insertResult = await pool.query(
-            'INSERT INTO checadas (empleado_id, dispositivo_id, sucursal_id, tipo, turno_id, tiene_bono, es_retardo, minutos_diferencia, confianza_facial) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id, timestamp, tipo, tiene_bono, es_retardo',
+            `INSERT INTO checadas (
+                empleado_id,
+                dispositivo_id,
+                sucursal_id,
+                tipo,
+                turno_id,
+                tiene_bono,
+                es_retardo,
+                minutos_diferencia,
+                confianza_facial
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+            RETURNING id, timestamp, tipo, tiene_bono, es_retardo, minutos_diferencia`,
             [empleadoId, req.device.id, req.device.sucursal_id, tipo, empleado.turno_id, calculo.tiene_bono, calculo.es_retardo, calculo.minutos_diferencia, confidence]
         );
 

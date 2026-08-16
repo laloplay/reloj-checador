@@ -35,7 +35,7 @@ const PortalHeader = () => (
 
 const CamaraStep = ({ onConsultar, procesando, error, streamActivo, cameraError, videoRef, onRetryCamera }) => (
   <section className="flex h-full min-h-0 flex-1 flex-col overflow-hidden rounded-3xl border border-white/10 bg-white/5 shadow-[0_28px_80px_rgba(0,0,0,0.28)] backdrop-blur-2xl sm:rounded-[1.75rem]">
-    <div className="grid shrink-0 grid-cols-1 gap-3 border-b border-white/5 p-4 sm:grid-cols-[1fr_auto] sm:items-end sm:gap-4 sm:p-5 lg:p-6">
+    <div className="shrink-0 border-b border-white/5 p-4 sm:p-5 lg:p-6">
       <div>
         <div className="inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-500/10 px-3 py-1 text-[10px] uppercase tracking-[0.35em] text-cyan-100">
           <UserCheck size={12} />
@@ -43,21 +43,6 @@ const CamaraStep = ({ onConsultar, procesando, error, streamActivo, cameraError,
         </div>
         <h1 className="mt-3 text-3xl font-medium tracking-tight text-white sm:text-4xl lg:text-5xl">Portal de Empleado</h1>
         <p className="mt-2 text-sm text-slate-400 sm:text-base lg:text-lg">Consulta tus asistencias y registros del mes.</p>
-      </div>
-
-      <div className="flex flex-col gap-3">
-        <button
-          onClick={onConsultar}
-          disabled={procesando || !streamActivo}
-          className="group flex w-full items-center justify-center gap-2 rounded-2xl bg-linear-to-b from-blue-500 to-blue-600 px-6 py-4 text-sm font-semibold tracking-wide text-white shadow-lg shadow-blue-600/30 transition hover:from-blue-400 hover:to-blue-500 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 sm:w-auto"
-        >
-          {procesando ? (
-            <LoaderCircle className="animate-spin" size={18} />
-          ) : (
-            <Camera size={18} className="transition-transform group-hover:scale-110" />
-          )}
-          {procesando ? 'Verificando...' : 'Consultar mis registros'}
-        </button>
       </div>
     </div>
 
@@ -134,6 +119,22 @@ const CamaraStep = ({ onConsultar, procesando, error, streamActivo, cameraError,
              </div>
           )}
         </div>
+      </div>
+    </div>
+    <div className="shrink-0 border-t border-white/5 p-4 sm:p-5 lg:p-6">
+      <div className="mx-auto flex max-w-sm justify-center">
+        <button
+          onClick={onConsultar}
+          disabled={procesando || !streamActivo}
+          className="group flex w-full items-center justify-center gap-2 rounded-2xl border border-blue-300/30 bg-blue-600 px-6 py-4 text-sm font-semibold tracking-wide text-white shadow-lg shadow-blue-600/25 transition hover:bg-blue-500 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 sm:w-auto"
+        >
+          {procesando ? (
+            <LoaderCircle className="animate-spin" size={18} />
+          ) : (
+            <Camera size={18} className="transition-transform group-hover:scale-110" />
+          )}
+          {procesando ? 'Verificando...' : 'Consultar mis registros'}
+        </button>
       </div>
     </div>
   </section>
@@ -224,7 +225,7 @@ const DiaRow = ({ dia }) => {
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-4">
-          {dia.hora_entrada && (<div className="hidden font-mono text-sm text-slate-400 sm:block"><span>{dia.hora_entrada}</span><span className="mx-1.5 opacity-50">→</span><span>{dia.hora_salida || '--:--'}</span></div>)}
+          {dia.hora_entrada && (<div className="font-mono text-xs text-slate-400 sm:text-sm"><span>{dia.hora_entrada}</span><span className="mx-1.5 opacity-50">→</span><span>{dia.hora_salida || '--:--'}</span></div>)}
           {dia.tiene_bono && (<div className="flex items-center gap-1 rounded-full bg-yellow-500/20 px-2 py-0.5 text-xs font-medium text-yellow-200"><Award size={14} /> Bono</div>)}
         </div>
       </div>
@@ -236,9 +237,9 @@ const ResumenStep = ({ data, onCerrar, segundos }) => {
   const { empleado, resumen } = data;
 
   return (
-    <section className="flex h-full min-h-0 flex-1 flex-col overflow-hidden rounded-3xl border border-white/10 bg-white/5 shadow-[0_28px_80px_rgba(0,0,0,0.28)] backdrop-blur-2xl sm:rounded-[1.75rem]">
+    <section className="flex h-full min-h-0 flex-1 flex-col overflow-hidden rounded-3xl border border-white/10 shadow-[0_28px_80px_rgba(0,0,0,0.28)] backdrop-blur-2xl sm:rounded-[1.75rem]">
       {/* Header del Resumen */}
-      <div className="flex shrink-0 flex-col justify-between gap-4 border-b border-white/5 bg-white/2 p-4 sm:flex-row sm:items-center sm:p-5 lg:p-6">
+      <div className="flex shrink-0 flex-col justify-between gap-4 border-b border-white/5 bg-white/5 p-4 sm:flex-row sm:items-center sm:p-5 lg:p-6">
         <div className="flex items-center gap-4">
           <div className="flex h-14 w-14 items-center justify-center rounded-full border border-cyan-400/20 bg-cyan-500/10 shadow-inner sm:h-16 sm:w-16">
             <UserCheck className="text-cyan-300" size={28} />
@@ -262,7 +263,7 @@ const ResumenStep = ({ data, onCerrar, segundos }) => {
       </div>
 
       {/* Contenido scrolleable */}
-      <div className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-5 lg:p-6 custom-scrollbar">
+      <div className="flex-1 min-h-0 overflow-y-auto bg-white/5 p-4 sm:p-5 lg:p-6 custom-scrollbar">
         <div className="mx-auto max-w-4xl space-y-6">
           <h3 className="text-center text-lg font-medium capitalize tracking-wide text-white sm:text-left sm:text-xl">
             Resumen de {resumen.mes}

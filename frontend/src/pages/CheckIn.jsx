@@ -134,7 +134,8 @@ const AppHeader = ({ onOpenPendientes, pendientesCount }) => (
 
 const ResultadoOverlay = ({ resultado }) => {
   if (!resultado) return null;
-  const { exito, mensaje, tieneBono, esRetardo, minutosDiferencia } = resultado;
+  const { exito, mensaje, tieneBono, esRetardo, minutosDiferencia, tipo } = resultado;
+  const esSalida = tipo === 'salida';
 
   return (
     <div
@@ -155,12 +156,15 @@ const ResultadoOverlay = ({ resultado }) => {
           )}
         </div>
         <p className="mb-1 text-lg font-semibold sm:text-xl">{mensaje || (exito ? 'Operación completada' : 'Ocurrió un error')}</p>
-        {exito && tieneBono && <p className="text-sm text-emerald-200">¡Felicidades, registro puntual!</p>}
-        {exito && esRetardo && (
+        {exito && esSalida ? (
+          <p className="text-sm text-emerald-200">¡Nos vemos mañana!</p>
+        ) : exito && tieneBono ? (
+          <p className="text-sm text-emerald-200">¡Felicidades, registro puntual!</p>
+        ) : exito && esRetardo ? (
           <p className="text-sm text-amber-300">
             Registrado con {typeof minutosDiferencia === 'number' ? `${minutosDiferencia} min ` : ''}de retardo
           </p>
-        )}
+        ) : null}
       </div>
     </div>
   );
@@ -184,7 +188,7 @@ const CameraView = ({ videoRef, procesando, resultado, streamActivo, cameraError
         {streamActivo ? 'Cámara activa' : cameraError ? 'Cámara no disponible' : 'Iniciando cámara'}
       </div>
 
-      <div className="relative h-full min-h-[200px] overflow-hidden rounded-[1.25rem] border border-blue-400/20 bg-slate-950/60 shadow-2xl sm:rounded-[1.5rem]">
+      <div className="relative h-full min-h-50 overflow-hidden rounded-[1.25rem] border border-blue-400/20 bg-slate-950/60 shadow-2xl sm:rounded-3xl">
         <video ref={videoRef} autoPlay playsInline muted className="h-full w-full object-cover object-center" />
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_38%,rgba(2,6,23,0.45)_100%)]" />
 
@@ -406,12 +410,13 @@ export function CheckIn() {
       });
 
       const data = response.data;
-      mostrarResultado(true, 'Checada registrada', {
+      mostrarResultado(true, checkinType === 'salida' ? 'Salida registrada' : 'Checada registrada', {
         empleadoId: data.empleado_id,
         confianza: data.confianza_facial,
         tieneBono: data.tiene_bono,
         esRetardo: data.es_retardo,
         minutosDiferencia: data.minutos_diferencia,
+        tipo: checkinType,
       });
     } catch (error) {
       console.error('Error al capturar y enviar:', error);
@@ -542,7 +547,7 @@ export function CheckIn() {
         <AppHeader onOpenPendientes={() => setPanelPendientesAbierto(true)} pendientesCount={pendientesFacial.length} />
 
         <main className="mt-3 flex min-h-0 flex-1 flex-col sm:mt-4">
-          <section className="flex h-full min-h-0 flex-1 flex-col overflow-hidden rounded-[1.5rem] border border-white/10 bg-white/5 shadow-[0_28px_80px_rgba(0,0,0,0.28)] backdrop-blur-2xl sm:rounded-[1.75rem]">
+          <section className="flex h-full min-h-0 flex-1 flex-col overflow-hidden rounded-3xl border border-white/10 bg-white/5 shadow-[0_28px_80px_rgba(0,0,0,0.28)] backdrop-blur-2xl sm:rounded-[1.75rem]">
             <div className="shrink-0 border-b border-white/5 p-4 sm:p-5 lg:p-6">
               <div>
                 <div className="inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-500/10 px-3 py-1 text-[10px] uppercase tracking-[0.35em] text-cyan-100">
@@ -585,7 +590,7 @@ export function CheckIn() {
                     <button
                       onClick={registrarFacialPendiente}
                       disabled={procesando || !streamActivo}
-                      className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-b from-blue-500 to-blue-600 px-4 py-3.5 text-sm font-semibold tracking-wide text-white shadow-lg shadow-blue-600/30 transition hover:from-blue-400 hover:to-blue-500 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
+                      className="flex w-full items-center justify-center gap-2 rounded-2xl border border-blue-300/30 bg-blue-600 px-4 py-3.5 text-sm font-semibold tracking-wide text-white shadow-lg shadow-blue-600/25 transition hover:bg-blue-500 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
                     >
                       <User size={18} />
                       {procesando ? 'Procesando...' : 'Completar registro facial'}
@@ -614,7 +619,7 @@ export function CheckIn() {
                       <button
                         onClick={() => capturarYEnviar('entrada')}
                         disabled={procesando || !streamActivo}
-                        className="group flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-b from-blue-500 to-blue-600 px-4 py-4 text-sm font-semibold tracking-wide text-white shadow-lg shadow-blue-600/30 transition hover:from-blue-400 hover:to-blue-500 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
+                        className="group flex items-center justify-center gap-2 rounded-2xl border border-blue-300/30 bg-blue-600 px-4 py-4 text-sm font-semibold tracking-wide text-white shadow-lg shadow-blue-600/25 transition hover:bg-blue-500 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
                       >
                         <RefreshCw
                           size={16}
