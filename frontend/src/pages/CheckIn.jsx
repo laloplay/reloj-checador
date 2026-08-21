@@ -17,6 +17,7 @@ import { Link } from 'react-router-dom';
 import api from '../services/api';
 import { useClock } from '../hooks/useClock';
 import { useCameraPermission } from '../hooks/useCameraPermission';
+import { useSpeech } from '../hooks/useSpeech';
 import { Logo } from '../components/Logo';
 
 const StatusDisplay = ({ icon, title, message, children }) => (
@@ -309,6 +310,7 @@ const PendientesSidePanel = ({ isOpen, onClose, pendientes, onSelect, isLoading 
 
 export function CheckIn() {
   const { permission, requestPermission } = useCameraPermission();
+  const { reproducirChecada } = useSpeech();
 
   const { hora, fecha } = useClock();
 
@@ -410,6 +412,10 @@ export function CheckIn() {
       });
 
       const data = response.data;
+      const mensajeDeVoz = checkinType === 'salida' ? 'Salida registrada' : 'Entrada registrada';
+
+      reproducirChecada(data.audio_url, mensajeDeVoz);
+
       mostrarResultado(true, checkinType === 'salida' ? 'Salida registrada' : 'Checada registrada', {
         empleadoId: data.empleado_id,
         confianza: data.confianza_facial,

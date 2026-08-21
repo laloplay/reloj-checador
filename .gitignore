@@ -11,6 +11,7 @@ frontend/node_modules/
 # ─── BUILD ─────────────────────────────────────────────
 frontend/dist/
 backend/dist/
+backend/audio-cache/
 
 # ─── LOGS ──────────────────────────────────────────────
 *.log

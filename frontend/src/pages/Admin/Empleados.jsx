@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Plus, Edit, UserX, X, Camera } from 'lucide-react';
+import { Plus, Edit, UserX, X, Camera, Volume2 } from 'lucide-react';
 import api from '../../services/api';
 
 const DAYS_OF_WEEK = [
@@ -157,6 +157,24 @@ export function AdminEmpleados() {
         } catch (error) {
             console.error('Error al eliminar empleado:', error);
             alert('Error al eliminar el empleado');
+        }
+    };
+
+    const regenerarAudio = async (id) => {
+        try {
+            await api.post(`/empleados/${id}/regenerar-audio`);
+            alert('Audio regenerado correctamente');
+            await cargarDatos();
+        } catch (error) {
+            console.error('Error al regenerar el audio:', error);
+            const backendMessage = error?.response?.data?.message;
+
+            if (error?.response?.status === 503) {
+                alert(backendMessage || 'AWS Polly no tiene permisos. Agrega polly:SynthesizeSpeech al usuario/rol de IAM.');
+                return;
+            }
+
+            alert(backendMessage || 'Error al regenerar el audio');
         }
     };
 
@@ -337,6 +355,15 @@ export function AdminEmpleados() {
                                             </td>
                                             <td className="py-4 px-4">
                                                 <div className="flex gap-2 justify-center">
+                                                    {empleado.face_id && (
+                                                        <button
+                                                            onClick={() => regenerarAudio(empleado.id)}
+                                                            className="inline-flex items-center gap-1 px-3 py-2 bg-emerald-900/30 text-emerald-400 border border-emerald-600/30 rounded-lg hover:bg-emerald-900/50 transition text-sm"
+                                                            title="Regenerar audio"
+                                                        >
+                                                            <Volume2 size={16} />
+                                                        </button>
+                                                    )}
                                                     <button
                                                         onClick={() => abrirModalEditar(empleado)}
                                                         className="inline-flex items-center gap-1 px-3 py-2 bg-blue-900/30 text-blue-400 border border-blue-600/30 rounded-lg hover:bg-blue-900/50 transition text-sm"

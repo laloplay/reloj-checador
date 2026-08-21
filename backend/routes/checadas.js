@@ -1,8 +1,10 @@
 const express = require('express');
+const fs = require('fs');
 const pool = require('../db/pool');
 const verifyDevice = require('../middleware/device');
 const { searchFace } = require('../services/rekognition');
 const { calcularChecada } = require('../services/turnos');
+const { obtenerRutaAudio } = require('../services/polly');
 
 const router = express.Router();
 
@@ -94,10 +96,21 @@ router.post('/', verifyDevice, async (req, res) => {
             [empleadoId, req.device.id, req.device.sucursal_id, tipo, empleado.turno_id, calculo.tiene_bono, calculo.es_retardo, calculo.minutos_diferencia, confidence]
         );
 
+        let tipoAudio = 'entrada_puntual';
+        if (tipo === 'salida') {
+            tipoAudio = 'salida';
+        } else if (calculo.es_retardo) {
+            tipoAudio = 'entrada_retardo';
+        }
+
+        const rutaAudio = obtenerRutaAudio(empleadoId, tipoAudio);
+        const audioUrl = rutaAudio && fs.existsSync(rutaAudio) ? `/audio/${empleadoId}_${tipoAudio}.mp3` : null;
+
         res.status(201).json({
             ...insertResult.rows[0],
             empleado_id: empleadoId,
             confianza_facial: confidence,
+            audio_url: audioUrl,
         });
     } catch (error) {
         console.error('POST checadas error:', error);

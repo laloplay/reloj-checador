@@ -1,6 +1,7 @@
 const express = require('express');
 const pool = require('../db/pool');
 const { indexFace } = require('../services/rekognition');
+const { generarAudiosEmpleado, eliminarAudiosEmpleado } = require('../services/polly');
 const jwt = require('jsonwebtoken');
 
 const router = express.Router();
@@ -195,7 +196,12 @@ router.post('/', verifyAdmin, async (req, res) => {
       registroFacialPendiente,
       horasRegistroFacial,
     ]);
-    res.status(201).json(rows[0]);
+    const empleadoCreado = rows[0];
+    res.status(201).json(empleadoCreado);
+
+    generarAudiosEmpleado(empleadoCreado)
+      .then(() => pool.query('UPDATE empleados SET audios_generados = true WHERE id = $1', [empleadoCreado.id]))
+      .catch((err) => console.warn('No se pudieron generar audios para el empleado nuevo:', err.message || err));
   } catch (error) {
     console.error('POST empleados error:', error);
     res.status(500).json({ message: 'Error interno' });
@@ -228,7 +234,20 @@ router.put('/:id', verifyAdmin, async (req, res) => {
       return res.status(404).json({ message: 'Empleado no encontrado' });
     }
 
-    res.json(rows[0]);
+    const empleadoActualizado = rows[0];
+    const antesRes = await pool.query('SELECT nombre_completo FROM empleados WHERE id = $1', [id]);
+    const nombreAnterior = antesRes.rows[0]?.nombre_completo;
+
+    if (nombreAnterior && nombreAnterior !== nombre_completo) {
+      eliminarAudiosEmpleado(id).catch((err) => console.error('Error eliminando audios antiguos:', err));
+      await pool.query('UPDATE empleados SET audios_generados = false WHERE id = $1', [id]);
+
+      generarAudiosEmpleado({ id, nombre_completo })
+        .then(() => pool.query('UPDATE empleados SET audios_generados = true WHERE id = $1', [id]))
+        .catch((err) => console.warn('No se pudieron regenerar los audios:', err.message || err));
+    }
+
+    res.json(empleadoActualizado);
   } catch (error) {
     console.error('PUT empleados error:', error);
     res.status(500).json({ message: 'Error interno' });
@@ -262,6 +281,32 @@ router.post('/:id/foto', allowAdminOrDevice, async (req, res) => {
   } catch (error) {
     console.error('POST empleados/:id/foto error:', error);
     res.status(500).json({ message: 'Error al procesar la imagen' });
+  }
+});
+
+router.post('/:id/regenerar-audio', verifyAdmin, async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const { rows } = await pool.query('SELECT * FROM empleados WHERE id = $1', [id]);
+    if (rows.length === 0) {
+      return res.status(404).json({ message: 'Empleado no encontrado' });
+    }
+
+    const empleado = rows[0];
+    await eliminarAudiosEmpleado(id);
+    await generarAudiosEmpleado(empleado);
+    await pool.query('UPDATE empleados SET audios_generados = true WHERE id = $1', [id]);
+
+    res.json({ message: 'Audios regenerados correctamente' });
+  } catch (error) {
+    if (error?.code === 'POLLY_ACCESS_DENIED') {
+      return res.status(503).json({
+        message: 'AWS Polly no tiene permisos. Agrega polly:SynthesizeSpeech al usuario/rol de IAM.',
+      });
+    }
+    console.error('Error regenerando audios:', error);
+    res.status(500).json({ message: 'Error al regenerar audios' });
   }
 });
 

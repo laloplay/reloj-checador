@@ -65,6 +65,7 @@ CREATE TABLE IF NOT EXISTS empleados (
   registro_facial_horas INTEGER NOT NULL DEFAULT 48 CHECK (registro_facial_horas IN (24, 48, 72)),
   aplica_bono BOOLEAN NOT NULL DEFAULT TRUE,
   face_id TEXT,
+  audios_generados BOOLEAN NOT NULL DEFAULT FALSE,
   foto_url TEXT,
   activo BOOLEAN NOT NULL DEFAULT TRUE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -104,6 +105,7 @@ ALTER TABLE empleados ALTER COLUMN dia_descanso SET DEFAULT '{}'::INTEGER[];
 ALTER TABLE empleados ADD COLUMN IF NOT EXISTS registro_facial_pendiente BOOLEAN DEFAULT FALSE;
 ALTER TABLE empleados ADD COLUMN IF NOT EXISTS registro_facial_expira TIMESTAMPTZ;
 ALTER TABLE empleados ADD COLUMN IF NOT EXISTS registro_facial_horas INTEGER DEFAULT 48;
+ALTER TABLE empleados ADD COLUMN IF NOT EXISTS audios_generados BOOLEAN DEFAULT FALSE;
 ALTER TABLE empleados ADD COLUMN IF NOT EXISTS foto_url TEXT;
 
 -- SOLICITUDES DE CORRECCIÓN

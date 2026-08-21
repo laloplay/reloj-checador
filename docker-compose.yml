@@ -32,6 +32,10 @@ services:
       PGTZ: America/Mexico_City
     ports:
       - "${BACKEND_PORT}:${BACKEND_PORT}"
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+      - ./backend/audio-cache:/app/audio-cache
     depends_on:
       - postgres
     networks:
