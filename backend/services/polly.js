@@ -102,7 +102,7 @@ async function generarAudiosEmpleado(empleado) {
     },
     {
       tipo: 'salida',
-      texto: `Hasta luego ${primerNombre}, que tengas un excelente día`,
+      texto: `Hasta luego ${primerNombre}, que tengas un excelente día, nos vemos mañana`,
     },
   ];
 

@@ -310,7 +310,7 @@ const PendientesSidePanel = ({ isOpen, onClose, pendientes, onSelect, isLoading 
 
 export function CheckIn() {
   const { permission, requestPermission } = useCameraPermission();
-  const { reproducirChecada } = useSpeech();
+  const { reproducirChecada, desbloquearAudio } = useSpeech();
 
   const { hora, fecha } = useClock();
 
@@ -414,7 +414,7 @@ export function CheckIn() {
       const data = response.data;
       const mensajeDeVoz = checkinType === 'salida' ? 'Salida registrada' : 'Entrada registrada';
 
-      reproducirChecada(data.audio_url, mensajeDeVoz);
+      await reproducirChecada(data.audio_url, mensajeDeVoz);
 
       mostrarResultado(true, checkinType === 'salida' ? 'Salida registrada' : 'Checada registrada', {
         empleadoId: data.empleado_id,
@@ -623,6 +623,7 @@ export function CheckIn() {
                   <div className="flex flex-col gap-2">
                     <div className="grid grid-cols-2 gap-3">
                       <button
+                        onPointerDownCapture={desbloquearAudio}
                         onClick={() => capturarYEnviar('entrada')}
                         disabled={procesando || !streamActivo}
                         className="group flex items-center justify-center gap-2 rounded-2xl border border-blue-300/30 bg-blue-600 px-4 py-4 text-sm font-semibold tracking-wide text-white shadow-lg shadow-blue-600/25 transition hover:bg-blue-500 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
@@ -636,6 +637,7 @@ export function CheckIn() {
                         Entrada
                       </button>
                       <button
+                        onPointerDownCapture={desbloquearAudio}
                         onClick={() => capturarYEnviar('salida')}
                         disabled={procesando || !streamActivo}
                         className="group flex items-center justify-center gap-2 rounded-2xl border border-slate-700 bg-slate-800/80 px-4 py-4 text-sm font-medium tracking-wide text-slate-300 transition hover:border-slate-600 hover:bg-slate-700 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400/60 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"

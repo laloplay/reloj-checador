@@ -1,17 +1,33 @@
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
-
 export function useSpeech() {
-  const reproducirDesdeUrl = (url) => {
-    if (!url) return null;
+  let audioDesbloqueado = false;
+
+  const reproducirDesdeUrl = async (url) => {
+    if (!url) return false;
 
     try {
       const audio = new Audio(url);
       audio.volume = 1;
-      audio.play().catch(() => {});
-      return audio;
+      await audio.play();
+      return true;
     } catch (error) {
       console.warn('No se pudo reproducir el audio:', error);
-      return null;
+      return false;
+    }
+  };
+
+  const desbloquearAudio = async () => {
+    if (audioDesbloqueado) return true;
+
+    try {
+      const audio = new Audio();
+      audio.muted = true;
+      audio.volume = 0;
+      await audio.play();
+      audio.pause();
+      audioDesbloqueado = true;
+      return true;
+    } catch (error) {
+      return false;
     }
   };
 
@@ -31,15 +47,28 @@ export function useSpeech() {
     }
   };
 
-  const reproducirChecada = (audioUrl, mensajeFallback = 'Tu asistencia ha sido registrada') => {
+  const reproducirChecada = async (audioUrl, mensajeFallback = 'Tu asistencia ha sido registrada') => {
     if (audioUrl) {
-      const urlCompleta = `${BASE_URL}${audioUrl}`;
-      reproducirDesdeUrl(urlCompleta);
-      return;
+      // 1. Asegurarnos de que la ruta lleve el prefijo /api para Nginx
+      let rutaAudio = audioUrl;
+      if (rutaAudio.startsWith('/audio')) {
+        rutaAudio = `/api${rutaAudio}`;
+      }
+
+      // 2. Aplicamos la lógica dinámica: localhost en Mac, ruta relativa en Ubuntu
+      const urlCompleta = import.meta.env.DEV 
+        ? `http://localhost:3001${rutaAudio}` 
+        : rutaAudio;
+
+      const ok = await reproducirDesdeUrl(urlCompleta);
+
+      if (ok) {
+        return;
+      }
     }
 
     reproducirTexto(mensajeFallback);
   };
 
-  return { reproducirChecada, reproducirTexto };
+  return { reproducirChecada, reproducirTexto, desbloquearAudio };
 }

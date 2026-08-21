@@ -7,7 +7,7 @@ const app = express();
 
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
-app.use('/audio', express.static(path.join(__dirname, 'audio-cache')));
+app.use('/api/audio', express.static(path.join(__dirname, 'audio-cache')));
 
 const authRoutes = require('./routes/auth');
 const checadasRoutes = require('./routes/checadas');
