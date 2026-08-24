@@ -222,9 +222,8 @@ export function AdminLayout() {
               <Menu size={20} />
             </button>
 
-            <div className="min-w-0 flex-1 text-center">
-              <p className="text-[10px] uppercase tracking-[0.3em] text-slate-400">Reloj Checador</p>
-              <p className="truncate text-sm font-medium text-white">{location.pathname.replace('/admin/', '') || 'dashboard'}</p>
+            <div className="min-w-0 text-center">
+              <Logo size="header" />
             </div>
 
             <button
