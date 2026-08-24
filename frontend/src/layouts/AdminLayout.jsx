@@ -27,7 +27,7 @@ const navigationGroups = [
         key: 'panel',
         label: 'Panel general',
         items: [
-            { path: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+            { path: '/admin/dashboard', label: 'Panel De Control', icon: LayoutDashboard },
             { path: '/admin/reportes', label: 'Reportes', icon: BarChart3 },
         ],
     },
@@ -144,11 +144,7 @@ export function AdminLayout() {
             </button>
           </div>
 
-          <div className="rounded-2xl border border-cyan-400/15 bg-cyan-500/10 px-4 py-3">
-            <p className="text-[11px] uppercase tracking-[0.3em] text-cyan-100/80">Panel administrativo</p>
-            <p className="mt-2 text-sm text-cyan-50/90">Control de asistencia, personal y operación.</p>
-          </div>
-
+          
           <nav className="flex-1 space-y-2 pr-0 md:overflow-hidden">
             {navigationGroups.map((group) => {
               const isOpen = openGroups[group.key] ?? false;

@@ -18,14 +18,14 @@ const quickActions = [
   {
     to: '/admin/reportes',
     label: 'Reportes',
-    description: 'Ver actividad y métricas',
+    description: 'Ver actividad',
     icon: BarChart3,
     accent: 'cyan',
   },
   {
     to: '/admin/empleados',
     label: 'Empleados',
-    description: 'Gestionar personal activo',
+    description: 'Gestionar personal',
     icon: Users,
     accent: 'blue',
   },
@@ -143,84 +143,17 @@ export function AdminDashboard() {
 
       <div className="relative mx-auto flex max-w-7xl flex-col gap-6 px-4 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
         <section className="overflow-hidden rounded-[1.75rem] border border-white/10 bg-white/5 p-5 shadow-[0_24px_80px_rgba(0,0,0,0.28)] backdrop-blur-2xl sm:p-6 lg:p-8">
-          <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-            <div className="max-w-2xl">
-              <div className="inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-500/10 px-3 py-1 text-[10px] uppercase tracking-[0.35em] text-cyan-100 sm:text-[11px]">
-                <LayoutDashboard size={12} />
-                Panel de control
-              </div>
-              <h1 className="mt-4 text-3xl font-medium tracking-tight text-white sm:text-4xl lg:text-5xl">
+              <h1 className="text-3xl font-medium tracking-tight text-white sm:text-4xl lg:text-5xl">
                 Bienvenido, <span className="text-cyan-300">{auth.admin?.username}</span>
               </h1>
-              <p className="mt-3 max-w-xl text-sm text-slate-400 sm:text-base lg:text-lg">
-                Aquí puedes ver lo más importante del sistema sin complicarte.
-              </p>
-            </div>
+          </section>
 
-            <div className="grid gap-3 sm:grid-cols-2 lg:min-w-md lg:grid-cols-2">
-              <div className="rounded-2xl border border-white/10 bg-slate-950/55 px-4 py-3">
-                <p className="text-[11px] uppercase tracking-[0.3em] text-slate-400">Hoy</p>
-                <p className="mt-2 text-sm font-medium text-white">{resumen.checadasHoy} checadas</p>
-              </div>
-              <div className="rounded-2xl border border-white/10 bg-slate-950/55 px-4 py-3">
-                <p className="text-[11px] uppercase tracking-[0.3em] text-slate-400">Empleados</p>
-                <p className="mt-2 text-sm font-medium text-white">{resumen.totalEmpleados} activos</p>
-              </div>
-              <div className="rounded-2xl border border-white/10 bg-slate-950/55 px-4 py-3">
-                <p className="text-[11px] uppercase tracking-[0.3em] text-slate-400">Dispositivos</p>
-                <p className="mt-2 text-sm font-medium text-white">{resumen.dispositivosPendientes} pendientes</p>
-              </div>
-              <div className="rounded-2xl border border-white/10 bg-slate-950/55 px-4 py-3">
-                <p className="text-[11px] uppercase tracking-[0.3em] text-slate-400">Faciales</p>
-                <p className="mt-2 text-sm font-medium text-white">{resumen.facialesPendientes} pendientes</p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section>
-          <div className="mb-4 flex items-end justify-between gap-3">
-            <div>
-              <h2 className="text-xl font-medium tracking-tight text-white sm:text-2xl">Resumen rápido</h2>
-              <p className="mt-1 text-sm text-slate-400">Solo lo que necesitas revisar primero</p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <article className="rounded-3xl border border-white/10 bg-white/5 p-5 shadow-[0_18px_60px_rgba(0,0,0,0.18)] backdrop-blur-xl">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <p className="text-[11px] uppercase tracking-[0.3em] text-slate-400">Checadas de hoy</p>
-                  <p className="mt-3 text-5xl font-light text-cyan-300">{resumen.checadasHoy}</p>
-                  <p className="mt-2 text-sm text-slate-400">Total de entradas y salidas registradas.</p>
-                </div>
-                <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-cyan-400/20 bg-cyan-500/10 text-cyan-300">
-                  <Clock3 size={24} />
-                </div>
-              </div>
-            </article>
-
-            <article className="rounded-3xl border border-white/10 bg-white/5 p-5 shadow-[0_18px_60px_rgba(0,0,0,0.18)] backdrop-blur-xl">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <p className="text-[11px] uppercase tracking-[0.3em] text-slate-400">Empleados activos</p>
-                  <p className="mt-3 text-5xl font-light text-blue-300">{resumen.totalEmpleados}</p>
-                  <p className="mt-2 text-sm text-slate-400">Personal que puede trabajar y registrar asistencia.</p>
-                </div>
-                <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-blue-400/20 bg-blue-500/10 text-blue-300">
-                  <Users size={24} />
-                </div>
-              </div>
-            </article>
-          </div>
-        </section>
-
+       
         <section className="grid gap-4 lg:grid-cols-[1.3fr_0.7fr]">
           <div className="rounded-3xl border border-white/10 bg-white/5 p-5 shadow-[0_18px_60px_rgba(0,0,0,0.2)] backdrop-blur-xl sm:p-6">
             <div className="flex items-end justify-between gap-3">
               <div>
                 <h2 className="text-xl font-medium tracking-tight text-white sm:text-2xl">Ir a una sección</h2>
-                <p className="mt-1 text-sm text-slate-400">Botones grandes para entrar sin perderte</p>
               </div>
             </div>
 
@@ -286,43 +219,7 @@ export function AdminDashboard() {
           </div>
         </section>
 
-        <section className="rounded-3xl border border-white/10 bg-white/5 p-5 shadow-[0_18px_60px_rgba(0,0,0,0.2)] backdrop-blur-xl sm:p-6">
-          <div className="flex items-end justify-between gap-3">
-            <div>
-              <h2 className="text-xl font-medium tracking-tight text-white sm:text-2xl">Qué revisar primero</h2>
-              <p className="mt-1 text-sm text-slate-400">Orden simple para no perder tiempo</p>
-            </div>
-          </div>
-
-          <div className="mt-5 grid gap-3 sm:grid-cols-3">
-            <Link
-              to="/admin/dispositivos"
-              className="rounded-[1.25rem] border border-white/10 bg-slate-950/50 p-4 transition hover:border-cyan-400/25 hover:bg-slate-950/80"
-            >
-              <p className="text-[11px] uppercase tracking-[0.3em] text-slate-400">Primero</p>
-              <h3 className="mt-3 text-lg font-medium text-white">Dispositivos</h3>
-              <p className="mt-2 text-sm text-slate-400">Revisa aprobaciones pendientes.</p>
-            </Link>
-
-            <Link
-              to="/admin/empleados"
-              className="rounded-[1.25rem] border border-white/10 bg-slate-950/50 p-4 transition hover:border-cyan-400/25 hover:bg-slate-950/80"
-            >
-              <p className="text-[11px] uppercase tracking-[0.3em] text-slate-400">Después</p>
-              <h3 className="mt-3 text-lg font-medium text-white">Empleados</h3>
-              <p className="mt-2 text-sm text-slate-400">Valida perfiles y faciales.</p>
-            </Link>
-
-            <Link
-              to="/admin/reportes"
-              className="rounded-[1.25rem] border border-white/10 bg-slate-950/50 p-4 transition hover:border-cyan-400/25 hover:bg-slate-950/80"
-            >
-              <p className="text-[11px] uppercase tracking-[0.3em] text-slate-400">Consulta</p>
-              <h3 className="mt-3 text-lg font-medium text-white">Reportes</h3>
-              <p className="mt-2 text-sm text-slate-400">Confirma que todo cuadra.</p>
-            </Link>
-          </div>
-        </section>
+        
       </div>
     </div>
   );
