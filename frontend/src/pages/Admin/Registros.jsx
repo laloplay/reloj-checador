@@ -282,6 +282,7 @@ export function AdminRegistros() {
                         <div className="text-xs text-gray-500">{registro.puesto_nombre || 'Sin puesto'}</div>
                       </td>
                       
+                      
                       <td className="py-4 px-4">
                         <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium border ${registro.tipo === 'entrada'
                           ? 'bg-green-900/30 text-green-400 border-green-600/30'
