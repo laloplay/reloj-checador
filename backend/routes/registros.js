@@ -1,6 +1,7 @@
 const express = require('express');
 const pool = require('../db/pool');
 const authenticateAdmin = require('../middleware/auth');
+const { construirDiasEmpleado } = require('../services/registros');
 
 const router = express.Router();
 router.use(authenticateAdmin);
@@ -85,6 +86,88 @@ router.get('/', async (req, res) => {
     res.json(rows);
   } catch (error) {
     console.error('GET /registros error:', error);
+    res.status(500).json({ message: 'Error interno del servidor' });
+  }
+});
+
+router.get('/por-sucursal', async (req, res) => {
+  const { sucursal_id, fecha_inicio, fecha_fin } = req.query;
+  const { inicio, fin } = buildRange(fecha_inicio, fecha_fin);
+
+  if (inicio > fin) {
+    return res.status(400).json({ message: 'fecha_inicio no puede ser mayor que fecha_fin' });
+  }
+
+  try {
+    const { rows: empleados } = await pool.query(
+      `SELECT
+         e.id,
+         e.nombre_completo,
+         e.dia_descanso,
+         p.nombre AS puesto_nombre,
+         t.hora_inicio AS turno_hora_inicio,
+         t.hora_fin AS turno_hora_fin,
+         s.id AS sucursal_id,
+         s.nombre AS sucursal_nombre
+       FROM empleados e
+       LEFT JOIN puestos p ON p.id = e.puesto_id
+       LEFT JOIN turnos t ON t.id = e.turno_id
+       LEFT JOIN sucursales s ON s.id = e.sucursal_id
+       WHERE e.activo = TRUE
+         AND ($1::uuid IS NULL OR e.sucursal_id = $1)
+       ORDER BY s.nombre NULLS LAST, e.nombre_completo ASC`,
+      [sucursal_id || null]
+    );
+
+    const grupos = new Map();
+    for (const empleado of empleados) {
+      const sucursalKey = empleado.sucursal_id || 'sin-sucursal';
+      if (!grupos.has(sucursalKey)) {
+        grupos.set(sucursalKey, {
+          sucursal: {
+            id: empleado.sucursal_id,
+            nombre: empleado.sucursal_nombre || 'Sin sucursal',
+          },
+          empleados: [],
+        });
+      }
+
+      const calendario = await construirDiasEmpleado(
+        empleado.id,
+        empleado.dia_descanso,
+        inicio,
+        fin,
+        pool
+      );
+
+      const {
+        id,
+        nombre_completo,
+        puesto_nombre,
+        turno_hora_inicio,
+        turno_hora_fin,
+      } = empleado;
+
+      grupos.get(sucursalKey).empleados.push({
+        empleado: {
+          id,
+          nombre_completo,
+          puesto_nombre,
+          turno_hora_inicio,
+          turno_hora_fin,
+          sucursal_id: empleado.sucursal_id,
+          sucursal_nombre: empleado.sucursal_nombre,
+        },
+        estadisticas: calendario.estadisticas,
+        dias: calendario.dias,
+        bono_primera_quincena: calendario.bono_primera_quincena,
+        bono_segunda_quincena: calendario.bono_segunda_quincena,
+      });
+    }
+
+    res.json([...grupos.values()]);
+  } catch (error) {
+    console.error('GET /registros/por-sucursal error:', error);
     res.status(500).json({ message: 'Error interno del servidor' });
   }
 });

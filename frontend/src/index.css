@@ -1,1 +1,65 @@
 @import "tailwindcss";
+
+@media print {
+	body > * { display: none !important; }
+	#registros-print-area { display: block !important; }
+
+	#registros-print-area {
+		position: absolute;
+		left: 0;
+		top: 0;
+		width: 100%;
+		padding: 2rem;
+		background: white;
+		color: #1a1a1a;
+		font-family: Arial, sans-serif;
+	}
+
+	#registros-print-area .print-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: flex-start;
+		margin-bottom: 2rem;
+		padding-bottom: 1rem;
+		border-bottom: 2px solid #e5e7eb;
+	}
+
+	#registros-print-area .print-header svg,
+	#registros-print-area .print-header img { max-width: 10rem; color: #1a1a1a; }
+	#registros-print-area h1 { margin: 0; font-size: 1.5rem; }
+	#registros-print-area h2 { margin: 1rem 0; font-size: 1.2rem; }
+	#registros-print-area h3 { margin: 0.75rem 0 0.25rem; font-size: 1rem; }
+	#registros-print-area p { margin: 0.2rem 0; font-size: 0.8rem; }
+
+	#registros-print-area .print-tabla {
+		width: 100%;
+		border-collapse: collapse;
+		margin-bottom: 1.5rem;
+		font-size: 11px;
+	}
+
+	#registros-print-area .print-tabla th {
+		background: #f3f4f6;
+		padding: 8px 12px;
+		text-align: left;
+		font-weight: 600;
+		color: #374151;
+		border-bottom: 1px solid #d1d5db;
+	}
+
+	#registros-print-area .print-tabla td {
+		padding: 6px 12px;
+		border-bottom: 1px solid #f3f4f6;
+		color: #4b5563;
+	}
+
+	#registros-print-area .print-puntual td { background: #f0fdf4; }
+	#registros-print-area .print-retardo td { background: #fffbeb; }
+	#registros-print-area .print-falta td { background: #fef2f2; }
+	#registros-print-area .print-descanso td { background: #eff6ff; }
+	#registros-print-area .print-festivo td { background: #f5f3ff; }
+	#registros-print-area .print-permiso td { background: #fff7ed; }
+	#registros-print-area .print-empleado-section { page-break-inside: avoid; margin-bottom: 2rem; }
+	#registros-print-area .print-sucursal-section { page-break-before: always; }
+	#registros-print-area .print-sucursal-section.first { page-break-before: avoid; }
+}
