@@ -110,7 +110,6 @@ export function AdminRegistros() {
       <div className="max-w-7xl mx-auto">
         <div className="mb-12">
           <h1 className="text-4xl font-light text-white tracking-wide">Registros</h1>
-          <p className="text-gray-400 text-sm mt-2">Consulta las checadas con sus datos de empleado, turno y sucursal</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
@@ -268,8 +267,6 @@ export function AdminRegistros() {
                   <tr className="border-b border-blue-900/20">
                     <th className="text-left py-3 px-4 text-gray-300 font-medium text-sm uppercase tracking-widest">Fecha/Hora</th>
                     <th className="text-left py-3 px-4 text-gray-300 font-medium text-sm uppercase tracking-widest">Empleado</th>
-                    <th className="text-left py-3 px-4 text-gray-300 font-medium text-sm uppercase tracking-widest">Sucursal</th>
-                    <th className="text-left py-3 px-4 text-gray-300 font-medium text-sm uppercase tracking-widest">Turno</th>
                     <th className="text-left py-3 px-4 text-gray-300 font-medium text-sm uppercase tracking-widest">Tipo</th>
                     <th className="text-left py-3 px-4 text-gray-300 font-medium text-sm uppercase tracking-widest">Bono</th>
                     <th className="text-left py-3 px-4 text-gray-300 font-medium text-sm uppercase tracking-widest">Retardo</th>
@@ -284,14 +281,7 @@ export function AdminRegistros() {
                         <div className="font-medium text-white">{registro.empleado_nombre_completo}</div>
                         <div className="text-xs text-gray-500">{registro.puesto_nombre || 'Sin puesto'}</div>
                       </td>
-                      <td className="py-4 px-4 text-gray-300">
-                        <div className="text-white">{registro.sucursal_nombre || 'Sin sucursal'}</div>
-                        <div className="text-xs text-gray-500">{registro.sucursal_direccion || ''}</div>
-                      </td>
-                      <td className="py-4 px-4 text-gray-300">
-                        <div className="text-white">{registro.turno_nombre || 'Sin turno'}</div>
-                        <div className="text-xs text-gray-500">{registro.turno_hora_inicio ? `${registro.turno_hora_inicio.slice(0, 5)} - ${registro.turno_hora_fin ? registro.turno_hora_fin.slice(0, 5) : '--:--'}` : ''}</div>
-                      </td>
+                      
                       <td className="py-4 px-4">
                         <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium border ${registro.tipo === 'entrada'
                           ? 'bg-green-900/30 text-green-400 border-green-600/30'
