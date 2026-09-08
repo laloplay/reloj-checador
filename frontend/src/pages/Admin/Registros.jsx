@@ -113,7 +113,10 @@ function StatCard({ label, value, color = 'text-white' }) { return <div classNam
 export function TablaEmpleado({ empleado, dias, estadisticas }) {
   return <section className="rounded-2xl border border-white/10 bg-slate-900/70 p-4 sm:p-6">
     <header className="mb-5 flex flex-wrap items-start justify-between gap-3"><div><h3 className="text-xl font-semibold text-white">{empleado.nombre_completo}</h3><p className="mt-1 text-sm text-slate-400">{empleado.puesto_nombre || 'Sin puesto'} · {empleado.turno_hora_inicio || '--:--'} - {empleado.turno_hora_fin || '--:--'}</p></div><span className="rounded-full border border-cyan-400/20 bg-cyan-500/10 px-3 py-1 text-xs text-cyan-200">{empleado.sucursal_nombre || 'Sin sucursal'}</span></header>
-    <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-5"><StatCard label="Entradas" value={estadisticas?.total_entradas} color="text-emerald-300" /><StatCard label="Salidas" value={estadisticas?.total_salidas} /><StatCard label="Retardos" value={estadisticas?.total_retardos} color="text-amber-300" /><StatCard label="Bonos" value={estadisticas?.total_bonos} color="text-cyan-300" /><StatCard label="Faltas" value={estadisticas?.total_faltas} color="text-rose-300" /></div>
+    <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-5">
+      <StatCard label="Retardos" value={estadisticas?.total_retardos} color="text-amber-300" />
+      <StatCard label="Faltas" value={estadisticas?.total_faltas} color="text-rose-300" />
+    </div>
     <div className="space-y-2">{dias?.map((dia) => <DiaRow key={dia.fecha} dia={dia} />)}</div>
   </section>;
 }
@@ -127,7 +130,51 @@ function DiaRow({ dia }) {
 function PrintArea({ modo, datos, fechaInicio, fechaFin }) {
   if (!datos) return <div id="registros-print-area" style={{ display: 'none' }} />;
   const grupos = modo === 'individual' ? [{ sucursal: { nombre: datos.empleado.sucursal_nombre }, empleados: [datos] }] : datos;
-  return <div id="registros-print-area" style={{ display: 'none' }}><div className="print-header"><Logo /><div><h1>Reporte de Asistencia</h1><p>Período: {formatearFecha(fechaInicio)} → {formatearFecha(fechaFin)}</p><p>Generado: {new Date().toLocaleString('es-MX')}</p></div></div>{grupos.map((grupo, index) => <section key={`${grupo.sucursal?.id || 'sin'}-${index}`} className={`print-sucursal-section ${index === 0 ? 'first' : ''}`}><h2>{grupo.sucursal?.nombre || 'Sin sucursal'}</h2>{grupo.empleados.map((item) => <div key={item.empleado.id} className="print-empleado-section"><h3>{item.empleado.nombre_completo}</h3><p>{item.empleado.puesto_nombre || 'Sin puesto'} · Turno: {item.empleado.turno_hora_inicio || '--:--'} - {item.empleado.turno_hora_fin || '--:--'}</p><p>Entradas: {item.estadisticas.total_entradas} | Salidas: {item.estadisticas.total_salidas} | Retardos: {item.estadisticas.total_retardos} | Faltas: {item.estadisticas.total_faltas}</p><table className="print-tabla"><thead><tr><th>Fecha</th><th>Día</th><th>Estado</th><th>Hora entrada</th><th>Hora salida</th><th>Observaciones</th></tr></thead><tbody>{item.dias.map((dia) => { const tipo = dia.condiciones?.[0]?.tipo; const estado = dia.condiciones?.map((condicion) => condicion.label).join(', ') || 'Sin estado'; return <tr key={dia.fecha} className={CONDICIONES[tipo]?.print || ''}><td>{formatearFecha(dia.fecha)}</td><td>{dia.dia_semana}</td><td>{estado}</td><td>{dia.hora_entrada || '--:--'}</td><td>{dia.hora_salida || '--:--'}</td><td>{dia.condiciones?.map((condicion) => condicion.motivo).filter(Boolean).join('; ') || ''}</td></tr>; })}</tbody></table></div>)}</section>)}</div>;
+  return <div id="registros-print-area" style={{ display: 'none' }}>
+    <div className="print-header">
+      <Logo />
+      <div>
+        <h1>Reporte de Asistencia</h1>
+        <p>Período: {formatearFecha(fechaInicio)} → {formatearFecha(fechaFin)}</p>
+        <p>Generado: {new Date().toLocaleString('es-MX')}</p>
+      </div>
+    </div>
+    {grupos.map((grupo, index) =>
+      <section key={`${grupo.sucursal?.id || 'sin'}-${index}`} className={`print-sucursal-section ${index === 0 ? 'first' : ''}`}>
+        <h2>{grupo.sucursal?.nombre || 'Sin sucursal'}</h2>
+        {grupo.empleados.map((item) =>
+          <div key={item.empleado.id} className="print-empleado-section">
+            <h3>{item.empleado.nombre_completo}</h3>
+            <p>{item.empleado.puesto_nombre || 'Sin puesto'} · Turno: {item.empleado.turno_hora_inicio || '--:--'} - {item.empleado.turno_hora_fin || '--:--'}</p>
+            <p>Entradas: {item.estadisticas.total_entradas} | Salidas: {item.estadisticas.total_salidas} | Retardos: {item.estadisticas.total_retardos} | Faltas: {item.estadisticas.total_faltas}</p>
+            <table className="print-tabla">
+              <thead>
+                <tr>
+                  <th>Fecha</th>
+                  <th>Día</th>
+                  <th>Estado</th>
+                  <th>Hora entrada</th>
+                  <th>Hora salida</th>
+                  <th>Observaciones</th>
+                </tr>
+              </thead>
+
+              <tbody>{item.dias.map((dia) => {
+                const tipo = dia.condiciones?.[0]?.tipo; const estado = dia.condiciones?.map((condicion) => condicion.label).join(', ') || 'Sin estado';
+                return <tr key={dia.fecha} className={CONDICIONES[tipo]?.print || ''}>
+                  <td>{formatearFecha(dia.fecha)}</td>
+                  <td>{dia.dia_semana}</td>
+                  <td>{estado}</td>
+                  <td>{dia.hora_entrada || '--:--'}</td>
+                  <td>{dia.hora_salida || '--:--'}</td>
+                  <td>{dia.condiciones?.map((condicion) => condicion.motivo).filter(Boolean).join('; ') || ''}</td>
+                </tr>;
+              })}
+              </tbody>
+            </table>
+          </div>)}
+      </section>)}
+  </div>;
 }
 
 export function AdminRegistros() {
