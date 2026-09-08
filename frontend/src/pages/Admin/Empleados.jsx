@@ -243,7 +243,7 @@ export function AdminEmpleados() {
 
     if (cargando) {
         return (
-            <div className="flex min-h-full min-h-[60vh] items-center justify-center bg-slate-950 p-4 text-white">
+            <div className="flex min-h-full items-center justify-center bg-slate-950 p-4 text-white">
                 <div className="text-center">
                     <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-2 border-cyan-400/20 border-b-cyan-400" />
                     <p className="tracking-wide text-slate-400">Cargando empleados...</p>
@@ -262,7 +262,7 @@ export function AdminEmpleados() {
                             Gestión de personal
                         </div>
                         <h1 className="mt-3 text-3xl font-medium tracking-tight text-white sm:text-4xl">Empleados</h1>
-                        <p className="mt-2 text-sm text-slate-400 sm:text-base">Gestiona el registro, estado y datos de tu equipo.</p>
+                        
                     </div>
                     <button
                         onClick={abrirModalCrear}
@@ -274,7 +274,7 @@ export function AdminEmpleados() {
                 </div>
 
                 {empleados.length === 0 ? (
-                    <div className="rounded-3xl border border-dashed border-white/10 bg-white/[0.03] px-6 py-16 text-center">
+                    <div className="rounded-3xl border border-dashed border-white/10 bg-white/3 px-6 py-16 text-center">
                         <Users className="mx-auto mb-4 text-slate-600" size={34} />
                         <p className="font-medium text-slate-300">No hay empleados registrados</p>
                         <p className="mt-1 text-sm text-slate-500">Agrega el primero para comenzar a gestionar tu equipo.</p>
@@ -287,7 +287,7 @@ export function AdminEmpleados() {
                                 const sucursal = sucursales.find((s) => s.id === empleado.sucursal_id);
                                 const puesto = puestos.find((p) => p.id === empleado.puesto_id);
                                 return (
-                                    <article key={empleado.id} className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 shadow-lg shadow-black/10 backdrop-blur-xl">
+                                    <article key={empleado.id} className="rounded-2xl border border-white/10 bg-white/4 p-4 shadow-lg shadow-black/10 backdrop-blur-xl">
                                         <div className="flex items-start justify-between gap-3">
                                             <div className="min-w-0">
                                                 <h2 className="truncate font-semibold text-white">{empleado.nombre_completo}</h2>
@@ -313,11 +313,11 @@ export function AdminEmpleados() {
                             })}
                         </div>
 
-                    <div className="hidden overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04] shadow-[0_20px_60px_rgba(0,0,0,0.18)] backdrop-blur-xl md:block">
+                    <div className="hidden overflow-hidden rounded-3xl border border-white/10 bg-white/4 shadow-[0_20px_60px_rgba(0,0,0,0.18)] backdrop-blur-xl md:block">
                         <div className="overflow-x-auto">
-                        <table className="w-full min-w-[900px] border-collapse">
+                        <table className="w-full min-w-225 border-collapse">
                             <thead>
-                                <tr className="border-b border-white/10 bg-white/[0.02]">
+                                <tr className="border-b border-white/10 bg-white/2">
                                     <th className="px-5 py-4 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
                                         Nombre Completo
                                     </th>
@@ -352,7 +352,7 @@ export function AdminEmpleados() {
                                     return (
                                         <tr
                                             key={empleado.id}
-                                            className="border-b border-white/5 transition hover:bg-cyan-500/[0.04]"
+                                            className="border-b border-white/5 transition hover:bg-cyan-500/4"
                                         >
                                             <td className="px-5 py-4 font-medium text-white">
                                                 {empleado.nombre_completo}
