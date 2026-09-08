@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Plus, Edit, UserX, X, Camera, Volume2 } from 'lucide-react';
+import { Plus, Edit, UserX, X, Camera, Volume2, Users } from 'lucide-react';
 import api from '../../services/api';
 
 const DAYS_OF_WEEK = [
@@ -243,63 +243,103 @@ export function AdminEmpleados() {
 
     if (cargando) {
         return (
-            <div className="flex items-center justify-center min-h-screen bg-neutral-950">
+            <div className="flex min-h-full min-h-[60vh] items-center justify-center bg-slate-950 p-4 text-white">
                 <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-                    <p className="text-gray-400 tracking-wide">Cargando empleados...</p>
+                    <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-2 border-cyan-400/20 border-b-cyan-400" />
+                    <p className="tracking-wide text-slate-400">Cargando empleados...</p>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-neutral-950 p-8">
-            <div className="max-w-6xl mx-auto">
-                <div className="flex items-center justify-between mb-12">
+        <div className="min-h-full bg-[radial-gradient(circle_at_top_right,rgba(14,165,233,0.10),transparent_28%),linear-gradient(180deg,#020617_0%,#07111f_100%)] p-4 text-white sm:p-6 lg:p-8">
+            <div className="mx-auto max-w-7xl">
+                <div className="mb-6 flex flex-col gap-4 sm:mb-8 sm:flex-row sm:items-end sm:justify-between">
                     <div>
-                        <h1 className="text-4xl font-light text-white tracking-wide">Empleados</h1>
-                        <p className="text-gray-400 text-sm mt-2">Gestiona el registro de empleados</p>
+                        <div className="inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-500/10 px-3 py-1 text-[10px] font-medium uppercase tracking-[0.28em] text-cyan-100">
+                            <Users size={12} />
+                            Gestión de personal
+                        </div>
+                        <h1 className="mt-3 text-3xl font-medium tracking-tight text-white sm:text-4xl">Empleados</h1>
+                        <p className="mt-2 text-sm text-slate-400 sm:text-base">Gestiona el registro, estado y datos de tu equipo.</p>
                     </div>
                     <button
                         onClick={abrirModalCrear}
-                        className="inline-flex items-center gap-2 px-4 py-3 bg-linear-to-r from-blue-600 to-blue-700 text-white font-semibold rounded-lg hover:from-blue-700 hover:to-blue-800 transition"
+                        className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-cyan-600 px-4 py-3 text-sm font-medium text-white shadow-lg shadow-cyan-950/30 transition hover:bg-cyan-500 active:scale-[0.99] sm:w-auto"
                     >
-                        <Plus size={20} />
+                        <Plus size={18} />
                         Nuevo empleado
                     </button>
                 </div>
 
                 {empleados.length === 0 ? (
-                    <div className="text-center py-12">
-                        <p className="text-gray-400 tracking-wide">No hay empleados registrados</p>
+                    <div className="rounded-3xl border border-dashed border-white/10 bg-white/[0.03] px-6 py-16 text-center">
+                        <Users className="mx-auto mb-4 text-slate-600" size={34} />
+                        <p className="font-medium text-slate-300">No hay empleados registrados</p>
+                        <p className="mt-1 text-sm text-slate-500">Agrega el primero para comenzar a gestionar tu equipo.</p>
                     </div>
                 ) : (
-                    <div className="overflow-x-auto">
-                        <table className="w-full border-collapse">
+                    <>
+                        <div className="grid gap-3 md:hidden">
+                            {empleados.map((empleado) => {
+                                const turno = turnos.find((t) => t.id === empleado.turno_id);
+                                const sucursal = sucursales.find((s) => s.id === empleado.sucursal_id);
+                                const puesto = puestos.find((p) => p.id === empleado.puesto_id);
+                                return (
+                                    <article key={empleado.id} className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 shadow-lg shadow-black/10 backdrop-blur-xl">
+                                        <div className="flex items-start justify-between gap-3">
+                                            <div className="min-w-0">
+                                                <h2 className="truncate font-semibold text-white">{empleado.nombre_completo}</h2>
+                                                <p className="mt-1 text-sm text-slate-400">{puesto?.nombre || 'Sin puesto asignado'}</p>
+                                            </div>
+                                            <span className={`shrink-0 rounded-full border px-2.5 py-1 text-xs font-medium ${empleado.activo ? 'border-emerald-400/20 bg-emerald-500/10 text-emerald-300' : 'border-rose-400/20 bg-rose-500/10 text-rose-300'}`}>
+                                                {empleado.activo ? 'Activo' : 'Inactivo'}
+                                            </span>
+                                        </div>
+                                        <dl className="mt-4 grid grid-cols-2 gap-x-3 gap-y-3 border-y border-white/5 py-3 text-sm">
+                                            <div><dt className="text-[10px] uppercase tracking-wider text-slate-500">Turno</dt><dd className="mt-1 truncate text-slate-200">{turno?.nombre || 'Sin asignar'}</dd></div>
+                                            <div><dt className="text-[10px] uppercase tracking-wider text-slate-500">Sucursal</dt><dd className="mt-1 truncate text-slate-200">{sucursal?.nombre || 'Sin asignar'}</dd></div>
+                                            <div><dt className="text-[10px] uppercase tracking-wider text-slate-500">Rostro</dt><dd className={`mt-1 ${empleado.face_id ? 'text-emerald-300' : 'text-slate-400'}`}>{empleado.face_id ? 'Registrado' : 'Pendiente'}</dd></div>
+                                            <div><dt className="text-[10px] uppercase tracking-wider text-slate-500">Bono</dt><dd className={`mt-1 ${empleado.aplica_bono ? 'text-emerald-300' : 'text-slate-400'}`}>{empleado.aplica_bono ? 'Aplica' : 'No aplica'}</dd></div>
+                                        </dl>
+                                        <div className="mt-3 flex items-center justify-end gap-2">
+                                            {empleado.face_id && <button onClick={() => regenerarAudio(empleado.id)} className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-emerald-400/20 bg-emerald-500/10 text-emerald-300 transition hover:bg-emerald-500/20" title="Regenerar audio" aria-label={`Regenerar audio de ${empleado.nombre_completo}`}><Volume2 size={16} /></button>}
+                                            <button onClick={() => abrirModalEditar(empleado)} className="inline-flex h-10 items-center gap-2 rounded-xl border border-cyan-400/20 bg-cyan-500/10 px-3 text-sm font-medium text-cyan-100 transition hover:bg-cyan-500/20"><Edit size={16} /> Editar</button>
+                                            <button onClick={() => eliminarEmpleado(empleado.id)} className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-rose-400/20 bg-rose-500/10 text-rose-300 transition hover:bg-rose-500/20" title="Desactivar empleado" aria-label={`Desactivar a ${empleado.nombre_completo}`}><UserX size={16} /></button>
+                                        </div>
+                                    </article>
+                                );
+                            })}
+                        </div>
+
+                    <div className="hidden overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04] shadow-[0_20px_60px_rgba(0,0,0,0.18)] backdrop-blur-xl md:block">
+                        <div className="overflow-x-auto">
+                        <table className="w-full min-w-[900px] border-collapse">
                             <thead>
-                                <tr className="border-b border-blue-900/20">
-                                    <th className="text-left py-4 px-4 text-gray-300 font-medium text-sm uppercase tracking-widest">
+                                <tr className="border-b border-white/10 bg-white/[0.02]">
+                                    <th className="px-5 py-4 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
                                         Nombre Completo
                                     </th>
-                                    <th className="text-left py-4 px-4 text-gray-300 font-medium text-sm uppercase tracking-widest">
+                                    <th className="px-4 py-4 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
                                         Turno
                                     </th>
-                                    <th className="text-left py-4 px-4 text-gray-300 font-medium text-sm uppercase tracking-widest">
+                                    <th className="px-4 py-4 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
                                         Sucursal
                                     </th>
-                                    <th className="text-left py-4 px-4 text-gray-300 font-medium text-sm uppercase tracking-widest">
+                                    <th className="px-4 py-4 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
                                         Puesto
                                     </th>
-                                    <th className="text-left py-4 px-4 text-gray-300 font-medium text-sm uppercase tracking-widest">
+                                    <th className="px-4 py-4 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
                                         Aplica Bono
                                     </th>
-                                    <th className="text-left py-4 px-4 text-gray-300 font-medium text-sm uppercase tracking-widest">
+                                    <th className="px-4 py-4 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
                                         Rostro
                                     </th>
-                                    <th className="text-left py-4 px-4 text-gray-300 font-medium text-sm uppercase tracking-widest">
+                                    <th className="px-4 py-4 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
                                         Estado
                                     </th>
-                                    <th className="text-center py-4 px-4 text-gray-300 font-medium text-sm uppercase tracking-widest">
+                                    <th className="px-5 py-4 text-center text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
                                         Acciones
                                     </th>
                                 </tr>
@@ -312,28 +352,28 @@ export function AdminEmpleados() {
                                     return (
                                         <tr
                                             key={empleado.id}
-                                            className="border-b border-blue-900/10 hover:bg-blue-900/5 transition"
+                                            className="border-b border-white/5 transition hover:bg-cyan-500/[0.04]"
                                         >
-                                            <td className="py-4 px-4 text-white font-medium">
+                                            <td className="px-5 py-4 font-medium text-white">
                                                 {empleado.nombre_completo}
                                             </td>
-                                            <td className="py-4 px-4 text-gray-400 text-sm">
+                                            <td className="px-4 py-4 text-sm text-slate-400">
                                                 {turno?.nombre || 'Sin asignar'}
                                             </td>
-                                            <td className="py-4 px-4 text-gray-400 text-sm">
+                                            <td className="px-4 py-4 text-sm text-slate-400">
                                                 {sucursal?.nombre || 'Sin asignar'}
                                             </td>
-                                            <td className="py-4 px-4 text-gray-400 text-sm">
+                                            <td className="px-4 py-4 text-sm text-slate-400">
                                                 {puesto?.nombre || 'Sin asignar'}
                                             </td>
-                                            <td className="py-4 px-4 text-gray-400 text-sm">
+                                            <td className="px-4 py-4 text-sm text-slate-400">
                                                 {empleado.aplica_bono ? (
                                                     <span className="text-green-400 font-semibold">✓ Sí</span>
                                                 ) : (
                                                     <span className="text-gray-500">✗ No</span>
                                                 )}
                                             </td>
-                                            <td className="py-4 px-4">
+                                            <td className="px-4 py-4">
                                                 <span
                                                     className={`inline-block px-3 py-1 rounded-full text-sm font-medium border ${empleado.face_id
                                                         ? 'bg-green-900/30 text-green-400 border-green-600/30'
@@ -343,7 +383,7 @@ export function AdminEmpleados() {
                                                     {empleado.face_id ? '✓ Registrado' : '○ Pendiente'}
                                                 </span>
                                             </td>
-                                            <td className="py-4 px-4">
+                                            <td className="px-4 py-4">
                                                 <span
                                                     className={`inline-block px-3 py-1 rounded-full text-sm font-medium border ${empleado.activo
                                                         ? 'bg-green-900/30 text-green-400 border-green-600/30'
@@ -353,7 +393,7 @@ export function AdminEmpleados() {
                                                     {empleado.activo ? 'Activo' : 'Inactivo'}
                                                 </span>
                                             </td>
-                                            <td className="py-4 px-4">
+                                            <td className="px-5 py-4">
                                                 <div className="flex gap-2 justify-center">
                                                     {empleado.face_id && (
                                                         <button
@@ -383,16 +423,18 @@ export function AdminEmpleados() {
                                 })}
                             </tbody>
                         </table>
+                        </div>
                     </div>
+                    </>
                 )}
             </div>
 
             {modalAbierto && (
-                <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50">
-                    <div className="bg-[#111217] border border-blue-400/10 rounded-2xl w-full max-w-3xl overflow-hidden">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-3 backdrop-blur-sm sm:p-4">
+                    <div className="max-h-[calc(100dvh-1.5rem)] w-full max-w-3xl overflow-hidden rounded-2xl border border-blue-400/10 bg-[#111217] sm:max-h-[calc(100dvh-2rem)]">
 
                         {/* Header */}
-                        <div className="flex items-center justify-between px-7 pt-6 pb-5 border-b border-blue-400/10">
+                        <div className="flex items-center justify-between border-b border-blue-400/10 px-5 pb-4 pt-5 sm:px-7 sm:pb-5 sm:pt-6">
                             <div>
                                 <p className="text-[11px] uppercase tracking-widest text-gray-500 font-medium mb-0.5">
                                     Gestión de personal
@@ -411,10 +453,10 @@ export function AdminEmpleados() {
 
                         {/* Body — dos columnas */}
                         <form onSubmit={guardarEmpleado}>
-                            <div className="flex gap-0 max-h-[70vh] overflow-y-auto">
+                            <div className="flex max-h-[calc(100dvh-10rem)] flex-col overflow-y-auto lg:max-h-[70vh] lg:flex-row">
 
                                 {/* Columna izquierda — inputs */}
-                                <div className="flex-1 px-7 py-5 flex flex-col gap-4 border-r border-blue-400/10">
+                                <div className="flex flex-1 flex-col gap-4 border-b border-blue-400/10 px-5 py-5 sm:px-7 lg:border-b-0 lg:border-r">
 
                                     <div>
                                         <label className="block text-[11px] uppercase tracking-widest text-gray-500 font-medium mb-1.5">
@@ -429,7 +471,7 @@ export function AdminEmpleados() {
                                         />
                                     </div>
 
-                                    <div className="grid grid-cols-2 gap-3">
+                                    <div className="grid gap-3 sm:grid-cols-2">
                                         <div>
                                             <label className="block text-[11px] uppercase tracking-widest text-gray-500 font-medium mb-1.5">
                                                 Fecha de ingreso
@@ -492,7 +534,7 @@ export function AdminEmpleados() {
 
                                     <div>
                                         <label className="block text-[11px] uppercase tracking-widest text-gray-500 font-medium mb-2">Días de descanso</label>
-                                        <div className="grid grid-cols-2 gap-2 rounded-lg border border-blue-400/10 bg-[#1a1d27] p-3">
+                                        <div className="grid grid-cols-2 gap-2 rounded-lg border border-blue-400/10 bg-[#1a1d27] p-3 sm:grid-cols-3">
                                             {DAYS_OF_WEEK.map((day) => (
                                                 <label key={day.value} className="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
                                                     <input
@@ -563,7 +605,7 @@ export function AdminEmpleados() {
                                 </div>
 
                                 {/* Columna derecha — cámara/foto */}
-                                <div className="w-80 shrink-0 px-6 py-5 flex flex-col gap-3">
+                                <div className="flex shrink-0 flex-col gap-3 px-5 py-5 sm:px-7 lg:w-80 lg:px-6">
                                     <label className="block text-[11px] uppercase tracking-widest text-gray-500 font-medium">
                                         Foto del rostro
                                     </label>
@@ -636,7 +678,7 @@ export function AdminEmpleados() {
                             </div>
 
                             {/* Footer */}
-                            <div className="px-7 pb-6 pt-4 border-t border-blue-400/10 flex gap-3">
+                            <div className="flex gap-3 border-t border-blue-400/10 px-5 pb-5 pt-4 sm:px-7 sm:pb-6">
                                 <button
                                     type="button"
                                     onClick={cerrarModal}
