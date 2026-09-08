@@ -253,7 +253,6 @@ const PendientesSidePanel = ({ isOpen, onClose, pendientes, onSelect, isLoading 
     >
       <div className="flex shrink-0 items-center justify-between gap-3 border-b border-white/10 p-4 sm:p-5">
         <div className="min-w-0">
-          <p className="text-xs uppercase tracking-[0.3em] text-blue-200/70">Alertas</p>
           <h2 className="truncate text-xl font-semibold text-white">Registro facial pendiente</h2>
         </div>
         <button
@@ -268,9 +267,6 @@ const PendientesSidePanel = ({ isOpen, onClose, pendientes, onSelect, isLoading 
       </div>
 
       <div className="flex-1 space-y-3 overflow-y-auto p-4 sm:p-5">
-        <div className="rounded-2xl border border-blue-500/20 bg-blue-500/10 p-4 text-sm text-blue-100">
-          Selecciona un empleado de la lista para iniciar el proceso de registro facial desde la pantalla principal.
-        </div>
 
         {isLoading ? (
           <div className="flex flex-col items-center justify-center gap-3 py-10 text-slate-400">

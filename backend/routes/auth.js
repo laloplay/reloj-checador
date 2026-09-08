@@ -12,7 +12,10 @@ router.post('/login', async (req, res) => {
   }
 
   try {
-    const { rows } = await pool.query('SELECT id, username, password_hash FROM admins WHERE username = $1', [username]);
+    const { rows } = await pool.query(
+      'SELECT id, username, password_hash FROM admins WHERE LOWER(username) = LOWER($1)',
+      [username]
+    );
     if (rows.length === 0) {
       return res.status(401).json({ message: 'Credenciales inválidas' });
     }
