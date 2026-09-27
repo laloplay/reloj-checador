@@ -3,6 +3,7 @@ import api from './api';
 import { get, set, del } from './indexedDB';
 
 const DEVICE_TOKEN_KEY = 'device-jwt';
+const DEVICE_TYPE_KEY = 'device-tipo';
 
 /**
  * Genera un fingerprint único del navegador.
@@ -23,8 +24,16 @@ export function getDeviceTokenFromDB() {
 /**
  * Guarda el token del dispositivo en IndexedDB.
  */
-export function saveDeviceTokenToDB(token) {
-  return set(DEVICE_TOKEN_KEY, token);
+export async function saveDeviceTokenToDB(token, tipo = 'kiosco') {
+  await set(DEVICE_TOKEN_KEY, token);
+  await set(DEVICE_TYPE_KEY, tipo || 'kiosco');
+}
+
+/**
+ * Lee el tipo de dispositivo desde IndexedDB.
+ */
+export function getDeviceTipo() {
+  return get(DEVICE_TYPE_KEY);
 }
 
 /**

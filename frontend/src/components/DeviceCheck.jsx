@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { cloneElement, useCallback, useState, useEffect } from 'react';
 import { LoaderCircle, ShieldAlert, LockKeyhole } from 'lucide-react';
+import { useDevice } from '../context/DeviceContext';
 import {
   getFingerprint,
   getDeviceTokenFromDB,
@@ -13,10 +14,19 @@ import {
 
 export function DeviceCheck({ children }) {
   const [estado, setEstado] = useState('cargando'); // cargando, aprobado, pendiente, rechazado, error_verificacion, mostrar_formulario
+  const [deviceTipo, setDeviceTipo] = useState(null);
   const [fingerprint, setFingerprint] = useState(null);
   const [nombreDispositivo, setNombreDispositivo] = useState('');
   const [ubicacion, setUbicacion] = useState('');
   const [formError, setFormError] = useState('');
+  const { setTipo } = useDevice();
+
+  const guardarTipo = useCallback((tipo) => {
+    const tipoActual = tipo || 'kiosco';
+    setDeviceTipo(tipoActual);
+    setTipo(tipoActual);
+    return tipoActual;
+  }, [setTipo]);
 
   useEffect(() => {
     const verificarDispositivo = async () => {
@@ -31,10 +41,9 @@ export function DeviceCheck({ children }) {
           const data = await verifyDeviceToken();
 
           if (data.estado === 'aprobado') {
-            // Si el backend regeneró el token, lo guardamos.
-            if (token !== data.token) {
-              await saveDeviceTokenToDB(data.token);
-            }
+            // Guarda también el tipo aunque el token no haya cambiado.
+            const tipoActual = guardarTipo(data.tipo);
+            await saveDeviceTokenToDB(data.token || token, tipoActual);
             setEstado('aprobado');
           } else {
             // Si el token no es válido (p. ej. el admin lo rechazó después), lo limpiamos
@@ -61,7 +70,8 @@ export function DeviceCheck({ children }) {
                 // ¡Está aprobado! Reclamamos el token que el admin generó.
                 try {
                     const { token } = await claimDeviceToken(fp);
-                    await saveDeviceTokenToDB(token);
+                    const tipoActual = guardarTipo(statusData.tipo);
+                    await saveDeviceTokenToDB(token, tipoActual);
                     setEstado('aprobado');
                 } catch (claimError) {
                     console.error('Error al reclamar el token:', claimError);
@@ -81,7 +91,7 @@ export function DeviceCheck({ children }) {
     };
 
     verificarDispositivo();
-  }, []);
+  }, [guardarTipo]);
 
   const handleRegistroSubmit = async (e) => {
     e.preventDefault();
@@ -113,7 +123,7 @@ export function DeviceCheck({ children }) {
   };
 
   if (estado === 'aprobado') {
-    return children;
+    return cloneElement(children, { deviceTipo });
   }
 
   if (estado === 'mostrar_formulario') {

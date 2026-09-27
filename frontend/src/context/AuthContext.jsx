@@ -5,12 +5,14 @@ import { AUTH_TOKEN_STORAGE_KEY } from '../services/api';
 export const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
+  const [token, setToken] = useState(null);
   const [admin, setAdmin] = useState(null);
   const [cargando, setCargando] = useState(true);
 
   const initAuth = useCallback(() => {
     const token = localStorage.getItem(AUTH_TOKEN_STORAGE_KEY);
     if (token) {
+      setToken(token);
       try {
         const decoded = jwtDecode(token);
         // Opcional: verificar si el token ha expirado
@@ -23,6 +25,8 @@ export function AuthProvider({ children }) {
         console.error('Token inválido:', error);
         localStorage.removeItem(AUTH_TOKEN_STORAGE_KEY);
       }
+    } else {
+      setToken(null);
     }
     setCargando(false);
   }, []);
@@ -33,16 +37,18 @@ export function AuthProvider({ children }) {
 
   const login = (token) => {
     localStorage.setItem(AUTH_TOKEN_STORAGE_KEY, token);
+    setToken(token);
     const decoded = jwtDecode(token);
     setAdmin(decoded);
   };
 
   const logout = () => {
     localStorage.removeItem(AUTH_TOKEN_STORAGE_KEY);
+    setToken(null);
     setAdmin(null);
   };
 
-  const value = { admin, login, logout, cargando, refresh: initAuth };
+  const value = { token, admin, login, logout, cargando, refresh: initAuth };
 
   return <AuthContext.Provider value={value}>{!cargando && children}</AuthContext.Provider>;
 }

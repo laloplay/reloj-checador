@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Check, X, Smartphone, AlertCircle } from 'lucide-react';
+import { Check, X, Smartphone, AlertCircle, Pencil, Trash2, Save } from 'lucide-react';
 import api from '../../services/api';
 
 export function AdminDispositivos() {
@@ -8,10 +8,9 @@ export function AdminDispositivos() {
   const [cargando, setCargando] = useState(true);
   const [procesandoId, setProcesandoId] = useState(null);
   const [sucursalesSeleccionadas, setSucursalesSeleccionadas] = useState({});
-
-  useEffect(() => {
-    cargarDispositivos();
-  }, []);
+  const [tiposSeleccionados, setTiposSeleccionados] = useState({});
+  const [editando, setEditando] = useState(null);
+  const [formularioEdicion, setFormularioEdicion] = useState({});
 
   const cargarDispositivos = async () => {
     try {
@@ -29,8 +28,16 @@ export function AdminDispositivos() {
     }
   };
 
+  useEffect(() => {
+    cargarDispositivos();
+  }, []);
+
   const handleSucursalChange = (dispositivoId, sucursalId) => {
     setSucursalesSeleccionadas((prev) => ({ ...prev, [dispositivoId]: sucursalId }));
+  };
+
+  const handleTipoChange = (dispositivoId, tipo) => {
+    setTiposSeleccionados((prev) => ({ ...prev, [dispositivoId]: tipo }));
   };
 
   const aprobar = async (id) => {
@@ -42,7 +49,10 @@ export function AdminDispositivos() {
 
     try {
       setProcesandoId(id);
-      await api.put(`/dispositivos/${id}/aprobar`, { sucursal_id });
+      await api.put(`/dispositivos/${id}/aprobar`, {
+        sucursal_id,
+        tipo: tiposSeleccionados[id] || 'kiosco',
+      });
       await cargarDispositivos();
     } catch (error) {
       console.error('Error al aprobar dispositivo:', error);
@@ -58,6 +68,52 @@ export function AdminDispositivos() {
       await cargarDispositivos();
     } catch (error) {
       console.error('Error al rechazar dispositivo:', error);
+    } finally {
+      setProcesandoId(null);
+    }
+  };
+
+  const iniciarEdicion = (dispositivo) => {
+    setEditando(dispositivo.id);
+    setFormularioEdicion({
+      nombre_dispositivo: dispositivo.nombre_dispositivo || '',
+      ubicacion: dispositivo.ubicacion || '',
+      sucursal_id: dispositivo.sucursal_id || '',
+      tipo: dispositivo.tipo || 'kiosco',
+    });
+  };
+
+  const actualizarCampo = (campo, valor) => {
+    setFormularioEdicion((prev) => ({ ...prev, [campo]: valor }));
+  };
+
+  const guardarEdicion = async (id) => {
+    if (!formularioEdicion.nombre_dispositivo.trim()) {
+      alert('El nombre del dispositivo es requerido.');
+      return;
+    }
+
+    try {
+      setProcesandoId(id);
+      await api.put(`/dispositivos/${id}`, formularioEdicion);
+      setEditando(null);
+      await cargarDispositivos();
+    } catch (error) {
+      console.error('Error al actualizar dispositivo:', error);
+    } finally {
+      setProcesandoId(null);
+    }
+  };
+
+  const eliminar = async (id) => {
+    if (!window.confirm('¿Seguro que deseas eliminar este dispositivo? Esta acción no se puede deshacer.')) return;
+
+    try {
+      setProcesandoId(id);
+      await api.delete(`/dispositivos/${id}`);
+      await cargarDispositivos();
+    } catch (error) {
+      console.error('Error al eliminar dispositivo:', error);
     } finally {
       setProcesandoId(null);
     }
@@ -126,6 +182,9 @@ export function AdminDispositivos() {
                     Estado
                   </th>
                   <th className="text-left py-4 px-4 text-gray-300 font-medium text-sm uppercase tracking-widest">
+                    Tipo
+                  </th>
+                  <th className="text-left py-4 px-4 text-gray-300 font-medium text-sm uppercase tracking-widest">
                     Registrado
                   </th>
                   <th className="text-center py-4 px-4 text-gray-300 font-medium text-sm uppercase tracking-widest">
@@ -162,11 +221,73 @@ export function AdminDispositivos() {
                         {getEstadoTexto(dispositivo.estado)}
                       </span>
                     </td>
+                    <td className="py-4 px-4">
+                      {dispositivo.estado === 'aprobado' ? (
+                        <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium border ${
+                          dispositivo.tipo === 'administracion'
+                            ? 'bg-blue-900/30 text-blue-400 border-blue-600/30'
+                            : 'bg-neutral-800 text-gray-400 border-neutral-600/30'
+                        }`}>
+                          {dispositivo.tipo === 'administracion' ? '⚙️ Admin' : '🖥️ Kiosco'}
+                        </span>
+                      ) : (
+                        <span className="text-gray-500 text-sm">—</span>
+                      )}
+                    </td>
                     <td className="py-4 px-4 text-gray-400 text-sm">
                       {new Date(dispositivo.created_at).toLocaleDateString('es-ES')}
                     </td>
                     <td className="py-4 px-4">
-                      {dispositivo.estado === 'pendiente' ? (
+                      {editando === dispositivo.id ? (
+                        <div className="flex flex-wrap gap-2 justify-center items-center">
+                          <input
+                            value={formularioEdicion.nombre_dispositivo}
+                            onChange={(e) => actualizarCampo('nombre_dispositivo', e.target.value)}
+                            placeholder="Nombre"
+                            className="w-40 px-2 py-2 bg-neutral-800 border border-blue-900/40 rounded-lg text-white text-sm focus:outline-none focus:border-blue-600"
+                          />
+                          <input
+                            value={formularioEdicion.ubicacion}
+                            onChange={(e) => actualizarCampo('ubicacion', e.target.value)}
+                            placeholder="Ubicación"
+                            className="w-40 px-2 py-2 bg-neutral-800 border border-blue-900/40 rounded-lg text-white text-sm focus:outline-none focus:border-blue-600"
+                          />
+                          <select
+                            value={formularioEdicion.sucursal_id}
+                            onChange={(e) => actualizarCampo('sucursal_id', e.target.value)}
+                            className="px-2 py-2 bg-neutral-800 border border-blue-900/40 rounded-lg text-white text-sm focus:outline-none focus:border-blue-600"
+                          >
+                            <option value="">Sin sucursal</option>
+                            {sucursales.filter((s) => s.activo).map((sucursal) => (
+                              <option key={sucursal.id} value={sucursal.id}>{sucursal.nombre}</option>
+                            ))}
+                          </select>
+                          <select
+                            value={formularioEdicion.tipo}
+                            onChange={(e) => actualizarCampo('tipo', e.target.value)}
+                            className="px-2 py-2 bg-neutral-800 border border-blue-900/40 rounded-lg text-white text-sm focus:outline-none focus:border-blue-600"
+                          >
+                            <option value="kiosco">🖥️ Kiosco</option>
+                            <option value="administracion">⚙️ Administración</option>
+                          </select>
+                          <button
+                            onClick={() => guardarEdicion(dispositivo.id)}
+                            disabled={procesandoId === dispositivo.id}
+                            title="Guardar cambios"
+                            className="inline-flex items-center gap-1 px-3 py-2 bg-green-900/30 text-green-400 border border-green-600/30 rounded-lg hover:bg-green-900/50 disabled:opacity-50 transition text-sm"
+                          >
+                            <Save size={16} /> Guardar
+                          </button>
+                          <button
+                            onClick={() => setEditando(null)}
+                            disabled={procesandoId === dispositivo.id}
+                            title="Cancelar edición"
+                            className="inline-flex items-center gap-1 px-3 py-2 bg-neutral-800 text-gray-300 border border-neutral-600/30 rounded-lg hover:bg-neutral-700 disabled:opacity-50 transition text-sm"
+                          >
+                            <X size={16} /> Cancelar
+                          </button>
+                        </div>
+                      ) : dispositivo.estado === 'pendiente' ? (
                         <div className="flex gap-2 justify-center items-center">
                           <select
                             value={sucursalesSeleccionadas[dispositivo.id] || ''}
@@ -182,6 +303,15 @@ export function AdminDispositivos() {
                                   {sucursal.nombre}
                                 </option>
                               ))}
+                          </select>
+                          <select
+                            value={tiposSeleccionados[dispositivo.id] || 'kiosco'}
+                            onChange={(e) => handleTipoChange(dispositivo.id, e.target.value)}
+                            className="px-2 py-2 bg-neutral-800 border border-blue-900/40 rounded-lg text-white text-sm focus:outline-none focus:border-blue-600 transition"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <option value="kiosco">🖥️ Kiosco</option>
+                            <option value="administracion">⚙️ Administración</option>
                           </select>
                           <button
                             onClick={() => aprobar(dispositivo.id)}
@@ -199,9 +329,42 @@ export function AdminDispositivos() {
                             <X size={16} />
                             Rechazar
                           </button>
+                          <button
+                            onClick={() => iniciarEdicion(dispositivo)}
+                            disabled={procesandoId === dispositivo.id}
+                            title="Editar dispositivo"
+                            className="inline-flex items-center gap-1 px-3 py-2 bg-blue-900/30 text-blue-400 border border-blue-600/30 rounded-lg hover:bg-blue-900/50 disabled:opacity-50 transition text-sm"
+                          >
+                            <Pencil size={16} /> Editar
+                          </button>
+                          <button
+                            onClick={() => eliminar(dispositivo.id)}
+                            disabled={procesandoId === dispositivo.id}
+                            title="Eliminar dispositivo"
+                            className="inline-flex items-center gap-1 px-3 py-2 bg-red-900/30 text-red-400 border border-red-600/30 rounded-lg hover:bg-red-900/50 disabled:opacity-50 transition text-sm"
+                          >
+                            <Trash2 size={16} /> Eliminar
+                          </button>
                         </div>
                       ) : (
-                        <span className="text-gray-500 text-sm">—</span>
+                        <div className="flex gap-2 justify-center items-center">
+                          <button
+                            onClick={() => iniciarEdicion(dispositivo)}
+                            disabled={procesandoId === dispositivo.id}
+                            title="Editar dispositivo"
+                            className="inline-flex items-center gap-1 px-3 py-2 bg-blue-900/30 text-blue-400 border border-blue-600/30 rounded-lg hover:bg-blue-900/50 disabled:opacity-50 transition text-sm"
+                          >
+                            <Pencil size={16} /> Editar
+                          </button>
+                          <button
+                            onClick={() => eliminar(dispositivo.id)}
+                            disabled={procesandoId === dispositivo.id}
+                            title="Eliminar dispositivo"
+                            className="inline-flex items-center gap-1 px-3 py-2 bg-red-900/30 text-red-400 border border-red-600/30 rounded-lg hover:bg-red-900/50 disabled:opacity-50 transition text-sm"
+                          >
+                            <Trash2 size={16} /> Eliminar
+                          </button>
+                        </div>
                       )}
                     </td>
                     </tr>

@@ -9,18 +9,18 @@ const DEVICE_JWT_SECRET = process.env.DEVICE_JWT_SECRET || 'tu-super-secreto-par
 
 // Middleware para verificar administradores (asumiendo que existe uno similar a empleados.js)
 const verifyAdmin = async (req, res, next) => {
-  const authHeader = req.headers.authorization || req.headers.Authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({ message: 'Token de administrador no proporcionado' });
-  }
-  const token = authHeader.split(' ')[1];
-  const secret = process.env.JWT_SECRET || 'secret';
-  try {
-    req.user = jwt.verify(token, secret);
-    next();
-  } catch (error) {
-    res.status(403).json({ message: 'Token de administrador inválido' });
-  }
+    const authHeader = req.headers.authorization || req.headers.Authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return res.status(401).json({ message: 'Token de administrador no proporcionado' });
+    }
+    const token = authHeader.split(' ')[1];
+    const secret = process.env.JWT_SECRET || 'secret';
+    try {
+        req.user = jwt.verify(token, secret);
+        next();
+    } catch (error) {
+        res.status(403).json({ message: 'Token de administrador inválido' });
+    }
 };
 
 // POST /registrar - Registra un nuevo dispositivo con su nombre y ubicación
@@ -34,9 +34,9 @@ router.post('/registrar', async (req, res) => {
         // "Candado": Verificar si ya existe una solicitud pendiente para este dispositivo.
         const existingDeviceRes = await pool.query('SELECT estado FROM dispositivos WHERE fingerprint = $1', [fingerprint]);
         if (existingDeviceRes.rows.length > 0 && existingDeviceRes.rows[0].estado === 'pendiente') {
-            return res.status(409).json({ 
+            return res.status(409).json({
                 message: 'Este dispositivo ya tiene una solicitud pendiente. Espere la aprobación de un administrador.',
-                ...existingDeviceRes.rows[0] 
+                ...existingDeviceRes.rows[0]
             });
         }
 
@@ -65,13 +65,13 @@ router.post('/registrar', async (req, res) => {
 router.get('/status/:fingerprint', async (req, res) => {
     const { fingerprint } = req.params;
     try {
-        const { rows } = await pool.query('SELECT estado FROM dispositivos WHERE fingerprint = $1', [fingerprint]);
+        const { rows } = await pool.query('SELECT estado, tipo FROM dispositivos WHERE fingerprint = $1', [fingerprint]);
         if (rows.length === 0) {
             // Es un dispositivo genuinamente nuevo, no está en la BD.
             return res.status(404).json({ estado: 'no_encontrado' });
         }
         // Devuelve el estado actual ('pendiente', 'aprobado', 'rechazado')
-        res.json({ estado: rows[0].estado });
+        res.json({ estado: rows[0].estado, tipo: rows[0].tipo });
     } catch (error) {
         console.error(`GET /dispositivos/status/${fingerprint} error:`, error);
         res.status(500).json({ message: 'Error interno al verificar estado del dispositivo' });
@@ -87,7 +87,7 @@ router.post('/claim-token', async (req, res) => {
 
     try {
         const { rows } = await pool.query(
-            'SELECT token, estado FROM dispositivos WHERE fingerprint = $1',
+            'SELECT token, estado, tipo FROM dispositivos WHERE fingerprint = $1',
             [fingerprint]
         );
 
@@ -100,7 +100,7 @@ router.post('/claim-token', async (req, res) => {
             return res.status(403).json({ message: 'El dispositivo no está listo o aprobado para reclamar un token.', estado: dispositivo.estado });
         }
 
-        res.json({ token: dispositivo.token });
+        res.json({ token: dispositivo.token, tipo: dispositivo.tipo });
 
     } catch (error) {
         console.error('POST /dispositivos/claim-token error:', error);
@@ -119,11 +119,11 @@ router.get('/verificar', async (req, res) => {
         const decoded = jwt.verify(deviceJwt, DEVICE_JWT_SECRET);
         if (decoded.tipo !== 'device-auth') throw new Error('Tipo de token inválido');
 
-        const { rows } = await pool.query('UPDATE dispositivos SET ultimo_acceso = NOW() WHERE id = $1 RETURNING estado', [decoded.dispositivo_id]);
+        const { rows } = await pool.query('UPDATE dispositivos SET ultimo_acceso = NOW() WHERE id = $1 RETURNING estado, tipo', [decoded.dispositivo_id]);
         if (rows.length === 0 || rows[0].estado !== 'aprobado') {
             return res.status(403).json({ estado: rows[0]?.estado || 'rechazado', message: 'Dispositivo no aprobado.' });
         }
-        return res.json({ estado: 'aprobado', token: deviceJwt });
+        return res.json({ estado: 'aprobado', tipo: rows[0].tipo, token: deviceJwt });
 
     } catch (error) {
         if (error instanceof jwt.TokenExpiredError || error instanceof jwt.JsonWebTokenError) {
@@ -150,7 +150,7 @@ router.get('/verificar', async (req, res) => {
                     [newToken, newExpiry, dispositivo.id]
                 );
 
-                return res.json({ estado: 'aprobado', token: newToken, message: 'Token regenerado.' });
+                return res.json({ estado: 'aprobado', tipo: dispositivo.tipo, token: newToken, message: 'Token regenerado.' });
             } catch (fallbackError) {
                 console.error('GET /dispositivos/verificar fallback error:', fallbackError);
                 return res.status(403).json({ estado: 'rechazado', message: 'Verificación de respaldo fallida.' });
@@ -164,7 +164,7 @@ router.get('/verificar', async (req, res) => {
 // PUT /:id/aprobar - Genera el JWT cuando un admin aprueba y asigna sucursal
 router.put('/:id/aprobar', verifyAdmin, async (req, res) => {
     const { id } = req.params;
-    const { sucursal_id } = req.body;
+    const { sucursal_id, tipo = 'kiosco' } = req.body;
     if (!sucursal_id) {
         return res.status(400).json({ message: 'La sucursal es requerida para aprobar.' });
     }
@@ -172,7 +172,7 @@ router.put('/:id/aprobar', verifyAdmin, async (req, res) => {
     try {
         const { rows } = await pool.query('SELECT * FROM dispositivos WHERE id = $1', [id]);
         if (rows.length === 0) return res.status(404).json({ message: 'Dispositivo no encontrado' });
-        
+
         const dispositivo = rows[0];
         const payload = { dispositivo_id: dispositivo.id, fingerprint: dispositivo.fingerprint, tipo: 'device-auth' };
         const token = jwt.sign(payload, DEVICE_JWT_SECRET, { expiresIn: '2y' });
@@ -180,11 +180,8 @@ router.put('/:id/aprobar', verifyAdmin, async (req, res) => {
         expiryDate.setFullYear(expiryDate.getFullYear() + 2);
 
         const updatedDeviceRes = await pool.query(
-            `UPDATE dispositivos
-             SET estado = 'aprobado', token = $1, token_expira = $2, sucursal_id = $3, aprobado_por = $4, aprobado_en = NOW()
-             WHERE id = $5
-             RETURNING *`,
-            [token, expiryDate, sucursal_id, req.user.id, id]
+            'UPDATE dispositivos SET estado = $1, aprobado_por = $2, aprobado_en = NOW(), sucursal_id = $3, tipo = $4, token = $6, token_expira = $7 WHERE id = $5 RETURNING *',
+            ['aprobado', req.user.id, sucursal_id, tipo || 'kiosco', id, token, expiryDate]
         );
 
         res.json(updatedDeviceRes.rows[0]);
@@ -207,6 +204,45 @@ router.put('/:id/rechazar', verifyAdmin, async (req, res) => {
     } catch (error) {
         console.error(`PUT /dispositivos/${id}/rechazar error:`, error);
         res.status(500).json({ message: 'Error interno al rechazar el dispositivo' });
+    }
+});
+
+router.put('/:id', verifyAdmin, async (req, res) => {
+    const { id } = req.params;
+    const { nombre_dispositivo, ubicacion, sucursal_id, tipo } = req.body;
+
+    if (!nombre_dispositivo || !tipo || !['kiosco', 'administracion'].includes(tipo)) {
+        return res.status(400).json({ message: 'El nombre y un tipo de dispositivo válido son requeridos' });
+    }
+
+    try {
+        const { rows } = await pool.query(
+            `UPDATE dispositivos
+             SET nombre_dispositivo = $1, ubicacion = $2, sucursal_id = $3, tipo = $4
+             WHERE id = $5
+             RETURNING *`,
+            [nombre_dispositivo.trim(), ubicacion?.trim() || null, sucursal_id || null, tipo, id]
+        );
+        if (rows.length === 0) return res.status(404).json({ message: 'Dispositivo no encontrado' });
+        res.json(rows[0]);
+    } catch (error) {
+        console.error(`PUT /dispositivos/${id} error:`, error);
+        res.status(500).json({ message: 'Error interno al actualizar el dispositivo' });
+    }
+});
+
+router.delete('/:id', verifyAdmin, async (req, res) => {
+    const { id } = req.params;
+    try {
+        const { rows } = await pool.query(
+            'DELETE FROM dispositivos WHERE id = $1 RETURNING id',
+            [id]
+        );
+        if (rows.length === 0) return res.status(404).json({ message: 'Dispositivo no encontrado' });
+        res.status(204).send();
+    } catch (error) {
+        console.error(`DELETE /dispositivos/${id} error:`, error);
+        res.status(500).json({ message: 'Error interno al eliminar el dispositivo' });
     }
 });
 

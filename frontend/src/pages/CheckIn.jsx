@@ -19,6 +19,7 @@ import { useClock } from '../hooks/useClock';
 import { useCameraPermission } from '../hooks/useCameraPermission';
 import { useSpeech } from '../hooks/useSpeech';
 import { Logo } from '../components/Logo';
+import { useDevice } from '../context/DeviceContext';
 
 const StatusDisplay = ({ icon, title, message, children }) => (
   <div className="flex h-screen w-full items-center justify-center bg-slate-950 text-white">
@@ -305,6 +306,7 @@ const PendientesSidePanel = ({ isOpen, onClose, pendientes, onSelect, isLoading 
 );
 
 export function CheckIn() {
+  const { tipo } = useDevice();
   const { permission, requestPermission } = useCameraPermission();
   const { reproducirChecada, desbloquearAudio } = useSpeech();
 
@@ -683,6 +685,14 @@ export function CheckIn() {
       >
         Consultar mis registros
       </Link>
+      {tipo === 'administracion' && (
+        <Link
+          to="/admin/login"
+          className="fixed bottom-4 left-4 z-20 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/40 backdrop-blur-sm transition hover:bg-white/10 hover:text-white/70 active:scale-95"
+        >
+          Admin
+        </Link>
+      )}
     </div>
   );
 }

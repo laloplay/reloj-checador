@@ -20,6 +20,7 @@ import { AdminFestivos } from './pages/Admin/Festivos';
 import { AdminAusencias } from './pages/Admin/Ausencias';
 import { AdminDispositivos } from './pages/Admin/Dispositivos';
 import { AuthProvider } from './context/AuthContext';
+import { DeviceProvider } from './context/DeviceContext';
 
 // Components & Layouts
 import { AdminLayout } from './layouts/AdminLayout';
@@ -29,7 +30,8 @@ import { DeviceCheck } from './components/DeviceCheck';
 function App() {
     return (
       <AuthProvider>
-        <Routes>
+        <DeviceProvider>
+          <Routes>
             {/* Rutas de Dispositivo (Públicas, pero con DeviceCheck) */}
             <Route path="/" element={<DeviceCheck><CheckIn /></DeviceCheck>} />
             <Route path="/portal" element={<DeviceCheck><PortalEmpleado /></DeviceCheck>} />
@@ -55,7 +57,8 @@ function App() {
 
             {/* Fallback */}
             <Route path="*" element={<Navigate to="/" />} />
-        </Routes>
+          </Routes>
+        </DeviceProvider>
       </AuthProvider>
     );
 }

@@ -139,6 +139,7 @@ CREATE TABLE IF NOT EXISTS dispositivos (
   estado VARCHAR(20) NOT NULL DEFAULT 'pendiente' CHECK (estado IN ('pendiente', 'aprobado', 'rechazado')),
   aprobado_por UUID REFERENCES admins(id) ON DELETE SET NULL,
   aprobado_en TIMESTAMPTZ,
+  tipo VARCHAR(20) NOT NULL DEFAULT 'kiosco' CHECK (tipo IN ('kiosco', 'administracion')),
   ultimo_acceso TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   sucursal_id UUID REFERENCES sucursales(id) ON DELETE SET NULL,
