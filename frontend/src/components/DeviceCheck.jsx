@@ -22,7 +22,10 @@ export function DeviceCheck({ children }) {
   const { setTipo } = useDevice();
 
   const guardarTipo = useCallback((tipo) => {
-    const tipoActual = tipo || 'kiosco';
+    if (tipo !== 'kiosco' && tipo !== 'administracion') {
+      throw new Error('El servidor no devolvió un tipo de dispositivo válido.');
+    }
+    const tipoActual = tipo;
     setDeviceTipo(tipoActual);
     setTipo(tipoActual);
     return tipoActual;
