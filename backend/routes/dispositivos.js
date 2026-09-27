@@ -41,15 +41,18 @@ router.post('/registrar', async (req, res) => {
         }
 
         // Si no está pendiente (o no existe), procedemos a insertar o actualizar.
-        // La cláusula ON CONFLICT ahora también resetea el estado a 'pendiente',
-        // lo que corrige el bug de que un dispositivo rechazado no podía volver a solicitar.
         const { rows } = await pool.query(
             `INSERT INTO dispositivos (fingerprint, nombre_dispositivo, ubicacion, estado, ultimo_acceso)
              VALUES ($1, $2, $3, 'pendiente', NOW())
              ON CONFLICT (fingerprint) DO UPDATE SET
                nombre_dispositivo = EXCLUDED.nombre_dispositivo,
                ubicacion = EXCLUDED.ubicacion,
-               estado = 'pendiente',
+                             -- Nunca degrada un dispositivo aprobado, aunque se registre de nuevo.
+                             estado = CASE
+                                 WHEN dispositivos.estado = 'aprobado' OR dispositivos.token IS NOT NULL
+                                     THEN dispositivos.estado
+                                 ELSE 'pendiente'
+                             END,
                ultimo_acceso = NOW()
              RETURNING id, estado, nombre_dispositivo, ubicacion`,
             [fingerprint, nombre_dispositivo, ubicacion || null]

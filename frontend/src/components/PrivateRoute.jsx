@@ -14,7 +14,7 @@ export function PrivateRoute({ children }) {
 
   if (cargando) return null;
 
-  if (tipo === 'administracion') {
+  if (tipo === 'kiosco') {
     return <Navigate to="/" replace />;
   }
 

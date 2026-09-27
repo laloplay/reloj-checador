@@ -50,11 +50,14 @@ export function clearDeviceTokenFromDB() {
 export async function verifyDeviceToken() {
   try {
     const { data } = await api.get('/dispositivos/verificar');
-    
-    // 1. AUTO-SINCRONIZACIÓN: Si el servidor responde con éxito, actualizamos IndexedDB
-    // Esto asegura que si lo cambiaste a 'administracion' en la BD, el navegador lo detecte y se actualice solo.
-    if (data.estado === 'aprobado' && data.tipo) {
-      await saveDeviceTokenToDB(data.token || getDeviceTokenFromDB(), data.tipo);
+    // El tipo del servidor reemplaza silenciosamente cualquier valor obsoleto local.
+    if (data.tipo) {
+      const tokenActual = data.token || await getDeviceTokenFromDB();
+      if (tokenActual) {
+        await saveDeviceTokenToDB(tokenActual, data.tipo);
+      } else {
+        await set(DEVICE_TYPE_KEY, data.tipo);
+      }
     }
     
     return data;
