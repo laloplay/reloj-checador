@@ -50,10 +50,22 @@ export function clearDeviceTokenFromDB() {
 export async function verifyDeviceToken() {
   try {
     const { data } = await api.get('/dispositivos/verificar');
-    return data; // { estado, token, message? }
+    
+    // 1. AUTO-SINCRONIZACIÓN: Si el servidor responde con éxito, actualizamos IndexedDB
+    // Esto asegura que si lo cambiaste a 'administracion' en la BD, el navegador lo detecte y se actualice solo.
+    if (data.estado === 'aprobado' && data.tipo) {
+      await saveDeviceTokenToDB(data.token || getDeviceTokenFromDB(), data.tipo);
+    }
+    
+    return data;
   } catch (error) {
-    // El interceptor de axios puede no manejar bien los errores 4xx
-    // Devolvemos el estado del error si está disponible
+    
+    if (error.response && (error.response.status === 401 || error.response.status === 403 || error.response.status === 404)) {
+      console.warn("Dispositivo rechazado o atascado. Limpiando memoria automáticamente...");
+      await clearDeviceTokenFromDB(); // Borra el token
+      await del(DEVICE_TYPE_KEY);     // Borra el rol viejo
+    }
+    
     return error.response?.data || { estado: 'error_verificacion' };
   }
 }
@@ -86,10 +98,23 @@ export async function checkDeviceStatusByFingerprint(fingerprint) {
   }
 }
 
-/**
- * Reclama el token para un dispositivo que ya ha sido aprobado.
- */
+
 export async function claimDeviceToken(fingerprint) {
-  const { data } = await api.post('/dispositivos/claim-token', { fingerprint });
-  return data; // { token: '...' }
+  try {
+    const { data } = await api.post('/dispositivos/claim-token', { fingerprint });
+    
+    // Auto-sincronización al momento de obtener el token por primera vez
+    if (data.token && data.tipo) {
+      await saveDeviceTokenToDB(data.token, data.tipo);
+    }
+    
+    return data; 
+  } catch (error) {
+    // Si da error 403 al reclamar (como nos pasaba antes), borramos el caché corrupto
+    if (error.response && error.response.status === 403) {
+      await clearDeviceTokenFromDB();
+      await del(DEVICE_TYPE_KEY);
+    }
+    throw error;
+  }
 }
