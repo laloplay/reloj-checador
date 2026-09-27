@@ -40,7 +40,7 @@ function App() {
             {/* Rutas de Administración */}
             <Route path="/admin/login" element={<AdminLogin />} />
 
-            <Route path="/admin" element={<PrivateRoute><AdminLayout /></PrivateRoute>}>
+            <Route path="/admin" element={<DeviceCheck><PrivateRoute><AdminLayout /></PrivateRoute></DeviceCheck>}>
                 <Route index element={<Navigate to="reportes" replace />} />
                 <Route path="dashboard" element={<AdminDashboard />} />
                 <Route path="reportes" element={<AdminReportes />} />

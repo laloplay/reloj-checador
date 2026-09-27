@@ -19,7 +19,7 @@ export function DeviceCheck({ children }) {
   const [nombreDispositivo, setNombreDispositivo] = useState('');
   const [ubicacion, setUbicacion] = useState('');
   const [formError, setFormError] = useState('');
-  const { setTipo } = useDevice();
+  const { setTipo, setCargando } = useDevice();
 
   const guardarTipo = useCallback((tipo) => {
     if (tipo !== 'kiosco' && tipo !== 'administracion') {
@@ -32,14 +32,18 @@ export function DeviceCheck({ children }) {
   }, [setTipo]);
 
   useEffect(() => {
+    let activo = true;
+
     const verificarDispositivo = async () => {
-      const fp = await getFingerprint();
-      setFingerprint(fp);
+      try {
+        const fp = await getFingerprint();
+        if (!activo) return;
+        setFingerprint(fp);
 
-      const token = await getDeviceTokenFromDB();
+        const token = await getDeviceTokenFromDB();
+        if (!activo) return;
 
-      if (token) {
-        try {
+        if (token) {
           // El interceptor de API ya adjunta el token, así que no necesitamos pasarlo aquí.
           const data = await verifyDeviceToken();
 
@@ -47,54 +51,54 @@ export function DeviceCheck({ children }) {
             // Guarda también el tipo aunque el token no haya cambiado.
             const tipoActual = guardarTipo(data.tipo);
             await saveDeviceTokenToDB(data.token || token, tipoActual);
-            setEstado('aprobado');
+            if (activo) setEstado('aprobado');
           } else {
             // Si el token no es válido (p. ej. el admin lo rechazó después), lo limpiamos
             // y volvemos a verificar el estado por fingerprint para mostrar el mensaje correcto.
             await clearDeviceTokenFromDB();
             const statusData = await checkDeviceStatusByFingerprint(fp);
             if (statusData.estado === 'pendiente' || statusData.estado === 'rechazado') {
-                setEstado(statusData.estado);
+                if (activo) setEstado(statusData.estado);
             } else {
-                setEstado('mostrar_formulario');
+                if (activo) setEstado('mostrar_formulario');
             }
           }
-        } catch (error) {
-          console.error('Error al verificar el dispositivo:', error);
-          await clearDeviceTokenFromDB(); // Limpiar token inválido
-          setEstado('error_verificacion');
-        }
-      } else {
-        // No hay token, consultamos el estado por fingerprint antes de mostrar el formulario.
-        try {
+        } else {
+          // No hay token, consultamos el estado por fingerprint antes de mostrar el formulario.
             const statusData = await checkDeviceStatusByFingerprint(fp);
 
             if (statusData.estado === 'aprobado') {
                 // ¡Está aprobado! Reclamamos el token que el admin generó.
                 try {
-                    const { token } = await claimDeviceToken(fp);
-                    const tipoActual = guardarTipo(statusData.tipo);
-                    await saveDeviceTokenToDB(token, tipoActual);
-                    setEstado('aprobado');
+                    const claimData = await claimDeviceToken(fp);
+                    const tipoActual = guardarTipo(claimData.tipo || statusData.tipo);
+                    const tokenReclamado = claimData.token;
+                    await saveDeviceTokenToDB(tokenReclamado, tipoActual);
+                    if (activo) setEstado('aprobado');
                 } catch (claimError) {
                     console.error('Error al reclamar el token:', claimError);
                     // Si falla el reclamo, es un error grave.
-                    setEstado('error_verificacion');
+                    if (activo) setEstado('error_verificacion');
                 }
             } else if (statusData.estado === 'pendiente' || statusData.estado === 'rechazado') {
-                setEstado(statusData.estado);
+                if (activo) setEstado(statusData.estado);
             } else { // 'no_encontrado'
-                setEstado('mostrar_formulario');
+                if (activo) setEstado('mostrar_formulario');
             }
-        } catch (error) {
-            console.error('Error al consultar estado por fingerprint:', error);
-            setEstado('error_verificacion');
         }
+      } catch (error) {
+        console.error('Error al verificar el dispositivo:', error);
+        await clearDeviceTokenFromDB();
+        if (activo) setEstado('error_verificacion');
+      } finally {
+        if (activo) setCargando(false);
       }
     };
 
     verificarDispositivo();
-  }, [guardarTipo]);
+
+    return () => { activo = false; };
+  }, [guardarTipo, setCargando]);
 
   const handleRegistroSubmit = async (e) => {
     e.preventDefault();

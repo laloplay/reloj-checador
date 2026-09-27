@@ -1,29 +1,20 @@
 import { Navigate, useLocation } from 'react-router-dom';
-import { useContext, useEffect, useState } from 'react';
+import { useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { useDevice } from '../context/DeviceContext';
 
 export function PrivateRoute({ children }) {
   const { token } = useContext(AuthContext);
-  const { tipo, cargando, verificar } = useDevice();
+  const { tipo, cargando } = useDevice();
   const location = useLocation();
-  const [verificandoAcceso, setVerificandoAcceso] = useState(true);
 
-  useEffect(() => {
-    let activo = true;
-    verificar().finally(() => {
-      if (activo) setVerificandoAcceso(false);
-    });
-    return () => { activo = false; };
-  }, [verificar]);
+  if (cargando) return null;
 
   if (!token) {
     return <Navigate to="/admin/login" state={{ from: location }} replace />;
   }
 
-  if (cargando || verificandoAcceso) return null;
-
-  if (tipo === 'kiosco') {
+  if (tipo !== 'administracion') {
     return <Navigate to="/" replace />;
   }
 
