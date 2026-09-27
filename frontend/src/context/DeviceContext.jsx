@@ -1,5 +1,6 @@
+/* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useEffect, useState } from 'react';
-import { getDeviceTipo, verifyDeviceToken } from '../services/device'; // IMPORTANTE: Importa verifyDeviceToken
+import { verifyDeviceToken } from '../services/device';
 
 export const DeviceContext = createContext({ tipo: null, cargando: true });
 
@@ -11,20 +12,11 @@ export function DeviceProvider({ children }) {
     let activo = true;
 
     async function sincronizarDispositivo() {
-      // La memoria local solo sirve como pista mientras termina la verificación.
-      const tipoGuardado = await getDeviceTipo();
-      if (activo && tipoGuardado) {
-        setTipo(tipoGuardado);
-      }
-
       try {
         const data = await verifyDeviceToken();
-        // El servidor es la fuente de verdad y actualiza también cambios hechos en la BD.
+        // Solo una respuesta exitosa del servidor puede decidir el tipo de ruta.
         if (activo && data?.tipo) {
           setTipo(data.tipo);
-        } else if (activo && data?.estado === 'rechazado') {
-          // Evita que un tipo local obsoleto bloquee la recuperación por fingerprint.
-          setTipo(null);
         }
       } catch {
         console.error("Sincronización silenciosa falló");
