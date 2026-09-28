@@ -1,104 +1,13 @@
-import { cloneElement, useCallback, useState, useEffect } from 'react';
+import { useState } from 'react';
 import { LoaderCircle, ShieldAlert, LockKeyhole } from 'lucide-react';
 import { useDevice } from '../context/DeviceContext';
-import {
-  getFingerprint,
-  getDeviceTokenFromDB,
-  saveDeviceTokenToDB,
-  clearDeviceTokenFromDB,
-  verifyDeviceToken,
-  registerDevice,
-  checkDeviceStatusByFingerprint,
-  claimDeviceToken,
-} from '../services/device';
 
 export function DeviceCheck({ children }) {
-  const [estado, setEstado] = useState('cargando'); // cargando, aprobado, pendiente, rechazado, error_verificacion, mostrar_formulario
-  const [deviceTipo, setDeviceTipo] = useState(null);
-  const [fingerprint, setFingerprint] = useState(null);
+  const { estado, fingerprint, registrar } = useDevice();
   const [nombreDispositivo, setNombreDispositivo] = useState('');
   const [ubicacion, setUbicacion] = useState('');
   const [formError, setFormError] = useState('');
-  const { setTipo, setCargando } = useDevice();
-
-  const guardarTipo = useCallback((tipo) => {
-    if (tipo !== 'kiosco' && tipo !== 'administracion') {
-      throw new Error('El servidor no devolvió un tipo de dispositivo válido.');
-    }
-    const tipoActual = tipo;
-    setDeviceTipo(tipoActual);
-    setTipo(tipoActual);
-    return tipoActual;
-  }, [setTipo]);
-
-  useEffect(() => {
-    let activo = true;
-
-    const verificarDispositivo = async () => {
-      try {
-        const fp = await getFingerprint();
-        if (!activo) return;
-        setFingerprint(fp);
-
-        const token = await getDeviceTokenFromDB();
-        if (!activo) return;
-
-        if (token) {
-          // El interceptor de API ya adjunta el token, así que no necesitamos pasarlo aquí.
-          const data = await verifyDeviceToken();
-
-          if (data.estado === 'aprobado') {
-            // Guarda también el tipo aunque el token no haya cambiado.
-            const tipoActual = guardarTipo(data.tipo);
-            await saveDeviceTokenToDB(data.token || token, tipoActual);
-            if (activo) setEstado('aprobado');
-          } else {
-            // Si el token no es válido (p. ej. el admin lo rechazó después), lo limpiamos
-            // y volvemos a verificar el estado por fingerprint para mostrar el mensaje correcto.
-            await clearDeviceTokenFromDB();
-            const statusData = await checkDeviceStatusByFingerprint(fp);
-            if (statusData.estado === 'pendiente' || statusData.estado === 'rechazado') {
-                if (activo) setEstado(statusData.estado);
-            } else {
-                if (activo) setEstado('mostrar_formulario');
-            }
-          }
-        } else {
-          // No hay token, consultamos el estado por fingerprint antes de mostrar el formulario.
-            const statusData = await checkDeviceStatusByFingerprint(fp);
-
-            if (statusData.estado === 'aprobado') {
-                // ¡Está aprobado! Reclamamos el token que el admin generó.
-                try {
-                    const claimData = await claimDeviceToken(fp);
-                    const tipoActual = guardarTipo(claimData.tipo || statusData.tipo);
-                    const tokenReclamado = claimData.token;
-                    await saveDeviceTokenToDB(tokenReclamado, tipoActual);
-                    if (activo) setEstado('aprobado');
-                } catch (claimError) {
-                    console.error('Error al reclamar el token:', claimError);
-                    // Si falla el reclamo, es un error grave.
-                    if (activo) setEstado('error_verificacion');
-                }
-            } else if (statusData.estado === 'pendiente' || statusData.estado === 'rechazado') {
-                if (activo) setEstado(statusData.estado);
-            } else { // 'no_encontrado'
-                if (activo) setEstado('mostrar_formulario');
-            }
-        }
-      } catch (error) {
-        console.error('Error al verificar el dispositivo:', error);
-        await clearDeviceTokenFromDB();
-        if (activo) setEstado('error_verificacion');
-      } finally {
-        if (activo) setCargando(false);
-      }
-    };
-
-    verificarDispositivo();
-
-    return () => { activo = false; };
-  }, [guardarTipo, setCargando]);
+  const [enviando, setEnviando] = useState(false);
 
   const handleRegistroSubmit = async (e) => {
     e.preventDefault();
@@ -106,31 +15,31 @@ export function DeviceCheck({ children }) {
       setFormError('El nombre del dispositivo es obligatorio.');
       return;
     }
+    if (!fingerprint) {
+      setFormError('No se pudo identificar este dispositivo. Recarga la página.');
+      return;
+    }
     setFormError('');
-    setEstado('cargando');
+    setEnviando(true);
 
     try {
-      await registerDevice({
-        fingerprint,
+      await registrar({
         nombre_dispositivo: nombreDispositivo,
         ubicacion,
       });
-      // Después de solicitar, el estado es 'pendiente' hasta que un admin apruebe.
-      setEstado('pendiente');
     } catch (error) {
       console.error('Error al registrar el dispositivo:', error);
-      // "Candado": Si el backend nos dice que ya está pendiente (409),
-      // simplemente mostramos el estado 'pendiente' en la UI.
       if (error.response && error.response.status === 409) {
-        setEstado('pendiente');
-      } else {
-        setEstado('error_registro');
+        return;
       }
+      setFormError('No se pudo enviar la solicitud. Intenta de nuevo.');
+    } finally {
+      setEnviando(false);
     }
   };
 
   if (estado === 'aprobado') {
-    return cloneElement(children, { deviceTipo });
+    return children;
   }
 
   if (estado === 'mostrar_formulario') {
@@ -167,7 +76,9 @@ export function DeviceCheck({ children }) {
               />
             </div>
             {formError && <p className="text-red-400 text-sm">{formError}</p>}
-            <button type="submit" className="w-full bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-2 px-4 rounded-md transition-colors">Solicitar Autorización</button>
+            <button type="submit" disabled={enviando} className="w-full bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-2 px-4 rounded-md transition-colors disabled:opacity-50">
+              {enviando ? 'Enviando...' : 'Solicitar Autorización'}
+            </button>
           </form>
         </div>
       </div>

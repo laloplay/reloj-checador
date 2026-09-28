@@ -1,5 +1,5 @@
 import { useContext, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { LockKeyhole, LogIn, UserRound } from 'lucide-react';
 import api from '../../services/api';
 import { AuthContext } from '../../context/AuthContext';
@@ -7,6 +7,7 @@ import { Logo } from '../../components/Logo';
 
 export function AdminLogin() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { login } = useContext(AuthContext);
 
   const [username, setUsername] = useState('');
@@ -29,7 +30,8 @@ export function AdminLogin() {
       const { token } = response.data;
 
       login(token);
-      navigate('/admin/dashboard');
+      const destino = location.state?.from?.pathname || '/admin/dashboard';
+      navigate(destino, { replace: true });
     } catch (err) {
       setError(
         err.response?.data?.message || 'Error al iniciar sesión. Intenta de nuevo.'
