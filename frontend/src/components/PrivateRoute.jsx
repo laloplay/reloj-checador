@@ -1,20 +1,20 @@
 import { Navigate, useLocation } from 'react-router-dom';
 import { useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
-import { useDevice } from '../context/DeviceContext';
 
-export function PrivateRoute({ children }) {
+export function PrivateRoute({ children, deviceTipo }) {
   const { token } = useContext(AuthContext);
-  const { tipo, cargando } = useDevice();
   const location = useLocation();
-
-  if (cargando) return null;
 
   if (!token) {
     return <Navigate to="/admin/login" state={{ from: location }} replace />;
   }
 
-  if (tipo !== 'administracion') {
+  // DeviceCheck passes the type it just verified with the backend. The global
+  // context can still contain a value from the previous route/device check.
+  if (!deviceTipo) return null;
+
+  if (deviceTipo !== 'administracion') {
     return <Navigate to="/" replace />;
   }
 
