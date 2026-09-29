@@ -56,7 +56,13 @@ function App() {
             </Route>
 
             {/* Fallback */}
-            <Route path="*" element={<Navigate to="/" />} />
+            <Route path="*" element={
+              <div className="flex h-screen flex-col items-center justify-center bg-slate-950 text-white">
+                <h1 className="text-4xl font-bold text-rose-500">404</h1>
+                <p className="mt-2 text-slate-400">Página no encontrada</p>
+                <a href="/" className="mt-4 text-cyan-400 underline">Volver al inicio</a>
+              </div>
+            } />
           </Routes>
         </DeviceProvider>
       </AuthProvider>
