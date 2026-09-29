@@ -1,9 +1,16 @@
 import { useState } from 'react';
-import { LoaderCircle, ShieldAlert, LockKeyhole } from 'lucide-react';
+import { LoaderCircle, ShieldAlert, LockKeyhole, RefreshCw } from 'lucide-react';
 import { useDevice } from '../context/DeviceContext';
 
+/**
+ * DeviceCheck — guardián único de acceso por dispositivo.
+ *
+ * Solo renderiza `children` cuando estado === 'aprobado'.
+ * Para cualquier otro estado muestra el UI correspondiente.
+ * No hace ninguna verificación propia: lee exclusivamente del DeviceContext.
+ */
 export function DeviceCheck({ children }) {
-  const { estado, fingerprint, registrar } = useDevice();
+  const { estado, fingerprint, registrar, reintentar } = useDevice();
   const [nombreDispositivo, setNombreDispositivo] = useState('');
   const [ubicacion, setUbicacion] = useState('');
   const [formError, setFormError] = useState('');
@@ -38,10 +45,12 @@ export function DeviceCheck({ children }) {
     }
   };
 
+  // ✅ Dispositivo aprobado: renderiza el contenido protegido
   if (estado === 'aprobado') {
     return children;
   }
 
+  // Formulario de registro para dispositivos nuevos
   if (estado === 'mostrar_formulario') {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-slate-950 text-white">
@@ -85,7 +94,7 @@ export function DeviceCheck({ children }) {
     );
   }
 
-  const renderStatus = (icon, title, message) => (
+  const renderStatus = (icon, title, message, action = null) => (
     <div className="flex h-screen w-full items-center justify-center bg-slate-950 text-white">
       <div className="max-w-sm text-center">
         <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-white/5">
@@ -93,21 +102,49 @@ export function DeviceCheck({ children }) {
         </div>
         <h1 className="text-2xl font-semibold text-white">{title}</h1>
         <p className="mt-2 text-slate-400">{message}</p>
+        {action}
       </div>
     </div>
   );
 
   if (estado === 'cargando') {
-    return renderStatus(<LoaderCircle className="animate-spin text-cyan-400" size={32} />, 'Verificando dispositivo...', 'Por favor, espera un momento.');
+    return renderStatus(
+      <LoaderCircle className="animate-spin text-cyan-400" size={32} />,
+      'Verificando dispositivo...',
+      'Por favor, espera un momento.',
+    );
   }
 
   if (estado === 'pendiente') {
-    return renderStatus(<ShieldAlert className="text-yellow-400" size={32} />, 'Solicitud Enviada', 'Este dispositivo necesita ser aprobado por un administrador para poder continuar.');
+    return renderStatus(
+      <ShieldAlert className="text-yellow-400" size={32} />,
+      'Solicitud Enviada',
+      'Este dispositivo necesita ser aprobado por un administrador para poder continuar.',
+    );
   }
 
   if (estado === 'rechazado') {
-    return renderStatus(<ShieldAlert className="text-red-400" size={32} />, 'Dispositivo rechazado', 'El acceso desde este dispositivo ha sido denegado.');
+    return renderStatus(
+      <ShieldAlert className="text-red-400" size={32} />,
+      'Dispositivo rechazado',
+      'El acceso desde este dispositivo ha sido denegado.',
+    );
   }
 
-  return renderStatus(<ShieldAlert className="text-red-400" size={32} />, 'Error de Dispositivo', 'No se pudo verificar este dispositivo. Contacta al administrador.');
+  // Estado: 'error_verificacion' u cualquier estado desconocido.
+  // Nunca dejar al usuario en pantalla en blanco: mostrar error con opción de reintento.
+  return renderStatus(
+    <ShieldAlert className="text-red-400" size={32} />,
+    'Error de Verificación',
+    'No se pudo conectar con el servidor para verificar este dispositivo.',
+    reintentar && (
+      <button
+        onClick={reintentar}
+        className="mt-6 inline-flex items-center gap-2 rounded-md bg-cyan-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-cyan-700"
+      >
+        <RefreshCw size={16} />
+        Reintentar
+      </button>
+    ),
+  );
 }

@@ -8,15 +8,34 @@ export const DeviceContext = createContext({
   fingerprint: null,
   cargando: true,
   registrar: async () => {},
+  reintentar: () => {},
 });
 
+/**
+ * DeviceProvider — única fuente de verdad del estado del dispositivo.
+ *
+ * Responsabilidades:
+ *  - Llamar a resolveDeviceAccess() UNA sola vez al montar.
+ *  - Exponer `reintentar` para que DeviceCheck pueda forzar una nueva verificación
+ *    después de un error de red.
+ *  - Exponer `registrar` para que DeviceCheck pueda solicitar autorización.
+ *
+ * NO verifica el token por separado. NO hace polling. NO toma decisiones de navegación.
+ * La UI y las redirecciones son responsabilidad de DeviceCheck y PrivateRoute.
+ */
 export function DeviceProvider({ children }) {
   const [tipo, setTipo] = useState(null);
   const [estado, setEstado] = useState('cargando');
   const [fingerprint, setFingerprint] = useState(null);
+  // Contador que, al incrementarse, dispara el useEffect de verificación de nuevo.
+  const [verificacionKey, setVerificacionKey] = useState(0);
 
   useEffect(() => {
     let activo = true;
+
+    // Restablecemos a 'cargando' antes de cada intento (incluyendo reintentos)
+    setEstado('cargando');
+    setTipo(null);
 
     const verificarDispositivo = async () => {
       try {
@@ -37,6 +56,14 @@ export function DeviceProvider({ children }) {
     return () => {
       activo = false;
     };
+  }, [verificacionKey]);
+
+  /**
+   * Fuerza una nueva verificación completa del dispositivo.
+   * Llamado por DeviceCheck cuando el usuario pulsa "Reintentar".
+   */
+  const reintentar = useCallback(() => {
+    setVerificacionKey((k) => k + 1);
   }, []);
 
   const registrar = useCallback(async ({ nombre_dispositivo, ubicacion }) => {
@@ -62,6 +89,7 @@ export function DeviceProvider({ children }) {
     fingerprint,
     cargando: estado === 'cargando',
     registrar,
+    reintentar,
   };
 
   return <DeviceContext.Provider value={value}>{children}</DeviceContext.Provider>;
