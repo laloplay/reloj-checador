@@ -121,9 +121,9 @@ export function AdminDispositivos() {
 
   const getEstadoBadge = (estado) => {
     const badgeMap = {
-      pendiente: 'bg-yellow-900/30 text-yellow-400 border-yellow-600/30',
-      aprobado: 'bg-green-900/30 text-green-400 border-green-600/30',
-      rechazado: 'bg-red-900/30 text-red-400 border-red-600/30',
+      pendiente: 'bg-amber-500/10 text-amber-300 border-amber-400/20',
+      aprobado: 'bg-emerald-500/10 text-emerald-300 border-emerald-400/20',
+      rechazado: 'bg-rose-500/10 text-rose-300 border-rose-400/20',
     };
     return badgeMap[estado] || badgeMap.pendiente;
   };
@@ -139,55 +139,64 @@ export function AdminDispositivos() {
 
   if (cargando) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-neutral-950">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-          <p className="text-gray-400 tracking-wide">Cargando dispositivos...</p>
+      <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-slate-950 text-white">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.14),transparent_32%),radial-gradient(circle_at_top_right,rgba(59,130,246,0.18),transparent_30%),radial-gradient(circle_at_bottom,rgba(15,23,42,0.96),rgba(2,6,23,1))]" />
+        <div className="absolute inset-0 opacity-[0.03] bg-[linear-gradient(rgba(255,255,255,0.9)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.9)_1px,transparent_1px)] bg-size-[36px_36px]" />
+        <div className="relative text-center">
+          <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-b-2 border-cyan-500"></div>
+          <p className="tracking-wide text-slate-400">Cargando dispositivos...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-neutral-950 p-8">
-      <div className="max-w-6xl mx-auto">
-        <div className="mb-12">
-          <div className="flex items-center gap-3 mb-2">
-            <Smartphone className="text-blue-400" size={28} />
-            <h1 className="text-4xl font-light text-white tracking-wide">Dispositivos</h1>
-          </div>
-          <p className="text-gray-400 text-sm ml-11">Gestiona los dispositivos registrados</p>
+    <div className="relative min-h-screen overflow-hidden bg-slate-950 text-white">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.14),transparent_32%),radial-gradient(circle_at_top_right,rgba(59,130,246,0.18),transparent_30%),radial-gradient(circle_at_bottom,rgba(15,23,42,0.96),rgba(2,6,23,1))]" />
+      <div className="absolute inset-0 opacity-[0.03] bg-[linear-gradient(rgba(255,255,255,0.9)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.9)_1px,transparent_1px)] bg-size-[36px_36px]" />
+      
+      <div className="relative mx-auto flex max-w-7xl flex-col gap-6 px-4 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
+        <div className="mb-6 flex flex-col gap-4 sm:mb-8 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+                <div className="inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-500/10 px-3 py-1 text-[10px] font-medium uppercase tracking-[0.28em] text-cyan-100">
+                    <Smartphone size={12} />
+                    Administración del sistema
+                </div>
+                <h1 className="mt-3 text-3xl font-medium tracking-tight text-white sm:text-4xl">Dispositivos</h1>
+            </div>
         </div>
 
         {dispositivos.length === 0 ? (
-          <div className="text-center py-12">
-            <AlertCircle className="mx-auto text-gray-500 mb-4" size={48} />
-            <p className="text-gray-400 tracking-wide">No hay dispositivos registrados</p>
+          <div className="rounded-3xl border border-dashed border-white/10 bg-white/3 px-6 py-16 text-center">
+            <Smartphone className="mx-auto mb-4 text-slate-600" size={34} />
+            <p className="font-medium text-slate-300">No hay dispositivos registrados</p>
+            <p className="mt-1 text-sm text-slate-500">Los dispositivos que inicien sesión aparecerán aquí.</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse">
-              <thead>
-                <tr className="border-b border-blue-900/20">
-                  <th className="text-left py-4 px-4 text-gray-300 font-medium text-sm uppercase tracking-widest">
+          <div className="overflow-hidden rounded-3xl border border-white/10 bg-white/4 shadow-[0_20px_60px_rgba(0,0,0,0.18)] backdrop-blur-xl">
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-225 border-collapse">
+                <thead>
+                  <tr className="border-b border-white/10 bg-white/2">
+                  <th className="text-left px-5 py-4 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
                     Dispositivo
                   </th>
-                  <th className="text-left py-4 px-4 text-gray-300 font-medium text-sm uppercase tracking-widest hidden md:table-cell">
+                  <th className="text-left px-5 py-4 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400 hidden md:table-cell">
                     Sucursal
                   </th>
-                  <th className="text-left py-4 px-4 text-gray-300 font-medium text-sm uppercase tracking-widest hidden lg:table-cell">
+                  <th className="text-left px-5 py-4 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400 hidden lg:table-cell">
                     Ubicación
                   </th>
-                  <th className="text-left py-4 px-4 text-gray-300 font-medium text-sm uppercase tracking-widest">
+                  <th className="text-left px-5 py-4 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
                     Estado
                   </th>
-                  <th className="text-left py-4 px-4 text-gray-300 font-medium text-sm uppercase tracking-widest">
+                  <th className="text-left px-5 py-4 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
                     Tipo
                   </th>
-                  <th className="text-left py-4 px-4 text-gray-300 font-medium text-sm uppercase tracking-widest">
+                  <th className="text-left px-5 py-4 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
                     Registrado
                   </th>
-                  <th className="text-center py-4 px-4 text-gray-300 font-medium text-sm uppercase tracking-widest">
+                  <th className="text-center px-5 py-4 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
                     Acciones
                   </th>
                 </tr>
@@ -196,10 +205,7 @@ export function AdminDispositivos() {
                 {dispositivos.map((dispositivo) => {
                   const sucursalAsignada = sucursales.find((s) => s.id === dispositivo.sucursal_id);
                   return (
-                    <tr
-                    key={dispositivo.id}
-                    className="border-b border-blue-900/10 hover:bg-blue-900/5 transition"
-                  >
+                    <tr key={dispositivo.id} className="border-b border-white/10 hover:bg-cyan-500/5 transition-colors">
                     <td className="py-4 px-4">
                       <div className="text-white font-medium">{dispositivo.nombre_dispositivo || 'Sin nombre'}</div>
                       <div className="text-gray-500 text-sm mt-1 font-mono">
@@ -225,10 +231,10 @@ export function AdminDispositivos() {
                       {dispositivo.estado === 'aprobado' ? (
                         <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium border ${
                           dispositivo.tipo === 'administracion'
-                            ? 'bg-blue-900/30 text-blue-400 border-blue-600/30'
-                            : 'bg-neutral-800 text-gray-400 border-neutral-600/30'
+                            ? 'bg-cyan-500/10 text-cyan-300 border-cyan-400/20'
+                            : 'bg-white/5 text-slate-300 border-white/10'
                         }`}>
-                          {dispositivo.tipo === 'administracion' ? '⚙️ Admin' : '🖥️ Kiosco'}
+                          {dispositivo.tipo === 'administracion' ? 'Admin' : 'Kiosco'}
                         </span>
                       ) : (
                         <span className="text-gray-500 text-sm">—</span>
@@ -244,18 +250,18 @@ export function AdminDispositivos() {
                             value={formularioEdicion.nombre_dispositivo}
                             onChange={(e) => actualizarCampo('nombre_dispositivo', e.target.value)}
                             placeholder="Nombre"
-                            className="w-40 px-2 py-2 bg-neutral-800 border border-blue-900/40 rounded-lg text-white text-sm focus:outline-none focus:border-blue-600"
+                            className="w-40 px-3 py-2 bg-black/20 border border-white/5 rounded-xl text-white text-sm focus:outline-none focus:border-cyan-400 focus:bg-white/10 shadow-inner transition"
                           />
                           <input
                             value={formularioEdicion.ubicacion}
                             onChange={(e) => actualizarCampo('ubicacion', e.target.value)}
                             placeholder="Ubicación"
-                            className="w-40 px-2 py-2 bg-neutral-800 border border-blue-900/40 rounded-lg text-white text-sm focus:outline-none focus:border-blue-600"
+                            className="w-40 px-3 py-2 bg-black/20 border border-white/5 rounded-xl text-white text-sm focus:outline-none focus:border-cyan-400 focus:bg-white/10 shadow-inner transition"
                           />
                           <select
                             value={formularioEdicion.sucursal_id}
                             onChange={(e) => actualizarCampo('sucursal_id', e.target.value)}
-                            className="px-2 py-2 bg-neutral-800 border border-blue-900/40 rounded-lg text-white text-sm focus:outline-none focus:border-blue-600"
+                            className="px-3 py-2 bg-black/20 border border-white/5 rounded-xl text-white text-sm focus:outline-none focus:border-cyan-400 focus:bg-white/10 shadow-inner transition"
                           >
                             <option value="">Sin sucursal</option>
                             {sucursales.filter((s) => s.activo).map((sucursal) => (
@@ -265,7 +271,7 @@ export function AdminDispositivos() {
                           <select
                             value={formularioEdicion.tipo}
                             onChange={(e) => actualizarCampo('tipo', e.target.value)}
-                            className="px-2 py-2 bg-neutral-800 border border-blue-900/40 rounded-lg text-white text-sm focus:outline-none focus:border-blue-600"
+                            className="px-3 py-2 bg-black/20 border border-white/5 rounded-xl text-white text-sm focus:outline-none focus:border-cyan-400 focus:bg-white/10 shadow-inner transition"
                           >
                             <option value="kiosco">🖥️ Kiosco</option>
                             <option value="administracion">⚙️ Administración</option>
@@ -274,7 +280,7 @@ export function AdminDispositivos() {
                             onClick={() => guardarEdicion(dispositivo.id)}
                             disabled={procesandoId === dispositivo.id}
                             title="Guardar cambios"
-                            className="inline-flex items-center gap-1 px-3 py-2 bg-green-900/30 text-green-400 border border-green-600/30 rounded-lg hover:bg-green-900/50 disabled:opacity-50 transition text-sm"
+                            className="inline-flex items-center gap-1 px-3 py-2 bg-emerald-500/10 text-emerald-300 border border-emerald-400/20 rounded-xl hover:bg-emerald-500/20 disabled:opacity-50 transition text-sm"
                           >
                             <Save size={16} /> Guardar
                           </button>
@@ -282,7 +288,7 @@ export function AdminDispositivos() {
                             onClick={() => setEditando(null)}
                             disabled={procesandoId === dispositivo.id}
                             title="Cancelar edición"
-                            className="inline-flex items-center gap-1 px-3 py-2 bg-neutral-800 text-gray-300 border border-neutral-600/30 rounded-lg hover:bg-neutral-700 disabled:opacity-50 transition text-sm"
+                            className="inline-flex items-center gap-1 px-3 py-2 bg-white/5 border border-white/10 text-gray-300 rounded-xl hover:bg-white/10 disabled:opacity-50 transition text-sm"
                           >
                             <X size={16} /> Cancelar
                           </button>
@@ -292,7 +298,7 @@ export function AdminDispositivos() {
                           <select
                             value={sucursalesSeleccionadas[dispositivo.id] || ''}
                             onChange={(e) => handleSucursalChange(dispositivo.id, e.target.value)}
-                            className="px-2 py-2 bg-neutral-800 border border-blue-900/40 rounded-lg text-white text-sm focus:outline-none focus:border-blue-600 transition"
+                            className="px-3 py-2 bg-black/20 border border-white/5 rounded-xl text-white text-sm focus:outline-none focus:border-cyan-400 focus:bg-white/10 shadow-inner transition transition"
                             onClick={(e) => e.stopPropagation()}
                           >
                             <option value="" disabled>Asignar sucursal</option>
@@ -307,7 +313,7 @@ export function AdminDispositivos() {
                           <select
                             value={tiposSeleccionados[dispositivo.id] || 'kiosco'}
                             onChange={(e) => handleTipoChange(dispositivo.id, e.target.value)}
-                            className="px-2 py-2 bg-neutral-800 border border-blue-900/40 rounded-lg text-white text-sm focus:outline-none focus:border-blue-600 transition"
+                            className="px-3 py-2 bg-black/20 border border-white/5 rounded-xl text-white text-sm focus:outline-none focus:border-cyan-400 focus:bg-white/10 shadow-inner transition transition"
                             onClick={(e) => e.stopPropagation()}
                           >
                             <option value="kiosco">🖥️ Kiosco</option>
@@ -316,7 +322,7 @@ export function AdminDispositivos() {
                           <button
                             onClick={() => aprobar(dispositivo.id)}
                             disabled={procesandoId === dispositivo.id}
-                            className="inline-flex items-center gap-1 px-3 py-2 bg-green-900/30 text-green-400 border border-green-600/30 rounded-lg hover:bg-green-900/50 disabled:opacity-50 disabled:cursor-not-allowed transition text-sm"
+                            className="inline-flex items-center gap-1 px-3 py-2 bg-emerald-500/10 text-emerald-300 border border-emerald-400/20 rounded-xl hover:bg-emerald-500/20 disabled:opacity-50 disabled:cursor-not-allowed transition text-sm"
                           >
                             <Check size={16} />
                             Aprobar
@@ -324,7 +330,7 @@ export function AdminDispositivos() {
                           <button
                             onClick={() => rechazar(dispositivo.id)}
                             disabled={procesandoId === dispositivo.id}
-                            className="inline-flex items-center gap-1 px-3 py-2 bg-red-900/30 text-red-400 border border-red-600/30 rounded-lg hover:bg-red-900/50 disabled:opacity-50 disabled:cursor-not-allowed transition text-sm"
+                            className="inline-flex items-center gap-1 px-3 py-2 bg-rose-500/10 text-rose-300 border border-rose-400/20 rounded-xl hover:bg-rose-500/20 disabled:opacity-50 disabled:cursor-not-allowed transition text-sm"
                           >
                             <X size={16} />
                             Rechazar
@@ -333,7 +339,7 @@ export function AdminDispositivos() {
                             onClick={() => iniciarEdicion(dispositivo)}
                             disabled={procesandoId === dispositivo.id}
                             title="Editar dispositivo"
-                            className="inline-flex items-center gap-1 px-3 py-2 bg-blue-900/30 text-blue-400 border border-blue-600/30 rounded-lg hover:bg-blue-900/50 disabled:opacity-50 transition text-sm"
+                            className="inline-flex items-center gap-1 px-3 py-2 bg-cyan-500/10 text-cyan-300 border border-cyan-400/20 rounded-xl hover:bg-cyan-500/20 disabled:opacity-50 transition text-sm"
                           >
                             <Pencil size={16} /> Editar
                           </button>
@@ -341,7 +347,7 @@ export function AdminDispositivos() {
                             onClick={() => eliminar(dispositivo.id)}
                             disabled={procesandoId === dispositivo.id}
                             title="Eliminar dispositivo"
-                            className="inline-flex items-center gap-1 px-3 py-2 bg-red-900/30 text-red-400 border border-red-600/30 rounded-lg hover:bg-red-900/50 disabled:opacity-50 transition text-sm"
+                            className="inline-flex items-center gap-1 px-3 py-2 bg-rose-500/10 text-rose-300 border border-rose-400/20 rounded-xl hover:bg-rose-500/20 disabled:opacity-50 transition text-sm"
                           >
                             <Trash2 size={16} /> Eliminar
                           </button>
@@ -352,7 +358,7 @@ export function AdminDispositivos() {
                             onClick={() => iniciarEdicion(dispositivo)}
                             disabled={procesandoId === dispositivo.id}
                             title="Editar dispositivo"
-                            className="inline-flex items-center gap-1 px-3 py-2 bg-blue-900/30 text-blue-400 border border-blue-600/30 rounded-lg hover:bg-blue-900/50 disabled:opacity-50 transition text-sm"
+                            className="inline-flex items-center gap-1 px-3 py-2 bg-cyan-500/10 text-cyan-300 border border-cyan-400/20 rounded-xl hover:bg-cyan-500/20 disabled:opacity-50 transition text-sm"
                           >
                             <Pencil size={16} /> Editar
                           </button>
@@ -360,7 +366,7 @@ export function AdminDispositivos() {
                             onClick={() => eliminar(dispositivo.id)}
                             disabled={procesandoId === dispositivo.id}
                             title="Eliminar dispositivo"
-                            className="inline-flex items-center gap-1 px-3 py-2 bg-red-900/30 text-red-400 border border-red-600/30 rounded-lg hover:bg-red-900/50 disabled:opacity-50 transition text-sm"
+                            className="inline-flex items-center gap-1 px-3 py-2 bg-rose-500/10 text-rose-300 border border-rose-400/20 rounded-xl hover:bg-rose-500/20 disabled:opacity-50 transition text-sm"
                           >
                             <Trash2 size={16} /> Eliminar
                           </button>
@@ -372,6 +378,7 @@ export function AdminDispositivos() {
                 })}
               </tbody>
             </table>
+            </div>
           </div>
         )}
       </div>

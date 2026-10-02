@@ -9,7 +9,6 @@ import { AdminLogin } from './pages/Admin/Login';
 
 // Admin Pages
 import { AdminDashboard } from './pages/Admin/Dashboard';
-import { AdminReportes } from './pages/Admin/Reportes';
 import { AdminEmpleados } from './pages/Admin/Empleados';
 import { AdminTurnos } from './pages/Admin/Turnos';
 import { AdminSucursales } from './pages/Admin/Sucursales';
@@ -41,9 +40,8 @@ function App() {
             <Route path="/admin/login" element={<DeviceCheck><AdminLogin /></DeviceCheck>} />
 
             <Route path="/admin" element={<DeviceCheck><PrivateRoute><AdminLayout /></PrivateRoute></DeviceCheck>}>
-                <Route index element={<Navigate to="reportes" replace />} />
+                <Route index element={<Navigate to="dashboard" replace />} />
                 <Route path="dashboard" element={<AdminDashboard />} />
-                <Route path="reportes" element={<AdminReportes />} />
                 <Route path="empleados" element={<AdminEmpleados />} />
                 <Route path="turnos" element={<AdminTurnos />} />
                 <Route path="sucursales" element={<AdminSucursales />} />

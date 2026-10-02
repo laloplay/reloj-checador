@@ -253,11 +253,14 @@ export function AdminEmpleados() {
     }
 
     return (
-        <div className="min-h-full bg-[radial-gradient(circle_at_top_right,rgba(14,165,233,0.10),transparent_28%),linear-gradient(180deg,#020617_0%,#07111f_100%)] p-4 text-white sm:p-6 lg:p-8">
-            <div className="mx-auto max-w-7xl">
+    <div className="relative min-h-screen overflow-hidden bg-slate-950 text-white">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.14),transparent_32%),radial-gradient(circle_at_top_right,rgba(59,130,246,0.18),transparent_30%),radial-gradient(circle_at_bottom,rgba(15,23,42,0.96),rgba(2,6,23,1))]" />
+      <div className="absolute inset-0 opacity-[0.03] bg-[linear-gradient(rgba(255,255,255,0.9)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.9)_1px,transparent_1px)] bg-size-[36px_36px]" />
+
+      <div className="relative mx-auto flex max-w-7xl flex-col gap-6 px-4 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
                 <div className="mb-6 flex flex-col gap-4 sm:mb-8 sm:flex-row sm:items-end sm:justify-between">
                     <div>
-                        <div className="inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-500/10 px-3 py-1 text-[10px] font-medium uppercase tracking-[0.28em] text-cyan-100">
+                        <div className="inline-flex items-center gap-2 rounded-lg border border-cyan-400/20  px-3 py-1 text-[10px] font-medium uppercase tracking-[0.28em] text-cyan-100">
                             <Users size={12} />
                             Gestión de personal
                         </div>
@@ -352,9 +355,9 @@ export function AdminEmpleados() {
                                     return (
                                         <tr
                                             key={empleado.id}
-                                            className="border-b border-white/5 transition hover:bg-cyan-500/4"
+                                            className="border-b border-white/5 transition hover:bg-cyan-500/5"
                                         >
-                                            <td className="px-5 py-4 font-medium text-white">
+                                            <td className="px-4 py-4 text-sm text-slate-400">
                                                 {empleado.nombre_completo}
                                             </td>
                                             <td className="px-4 py-4 text-sm text-slate-400">
@@ -406,7 +409,7 @@ export function AdminEmpleados() {
                                                     )}
                                                     <button
                                                         onClick={() => abrirModalEditar(empleado)}
-                                                        className="inline-flex items-center gap-1 px-3 py-2 bg-blue-900/30 text-blue-400 border border-blue-600/30 rounded-lg hover:bg-blue-900/50 transition text-sm"
+                                                        className="inline-flex items-center gap-1 px-3 py-2 bg-cyan-500/10 text-cyan-300 border border-cyan-400/20 rounded-xl hover:bg-cyan-500/20 transition text-sm"
                                                     >
                                                         <Edit size={16} />
                                                     </button>
@@ -430,22 +433,19 @@ export function AdminEmpleados() {
             </div>
 
             {modalAbierto && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-3 backdrop-blur-sm sm:p-4">
-                    <div className="max-h-[calc(100dvh-1.5rem)] w-full max-w-3xl overflow-hidden rounded-2xl border border-blue-400/10 bg-[#111217] sm:max-h-[calc(100dvh-2rem)]">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-3 backdrop-blur-md sm:p-4">
+                    <div className="max-h-[calc(100dvh-1.5rem)] w-full max-w-3xl overflow-hidden rounded-[1.75rem] border border-white/10 bg-white/[0.02] shadow-[0_24px_80px_rgba(0,0,0,0.5)] backdrop-blur-3xl sm:max-h-[calc(100dvh-2rem)]">
 
                         {/* Header */}
-                        <div className="flex items-center justify-between border-b border-blue-400/10 px-5 pb-4 pt-5 sm:px-7 sm:pb-5 sm:pt-6">
+                        <div className="flex items-center justify-between border-b border-white/10 px-5 pb-4 pt-5 sm:px-7 sm:pb-5 sm:pt-6">
                             <div>
-                                <p className="text-[11px] uppercase tracking-widest text-gray-500 font-medium mb-0.5">
-                                    Gestión de personal
-                                </p>
                                 <h2 className="text-lg font-light text-gray-100 tracking-wide m-0">
                                     {empleadoEditando ? 'Editar empleado' : 'Nuevo empleado'}
                                 </h2>
                             </div>
                             <button
                                 onClick={cerrarModal}
-                                className="w-8 h-8 flex items-center justify-center rounded-lg bg-white/5 border border-white/10 text-gray-400 hover:text-gray-200 hover:bg-white/10 transition"
+                                className="w-8 h-8 flex items-center justify-center rounded-xl bg-white/5 border border-white/10 text-gray-400 hover:text-gray-200 hover:bg-white/10 transition"
                             >
                                 <X size={16} />
                             </button>
@@ -456,7 +456,7 @@ export function AdminEmpleados() {
                             <div className="flex max-h-[calc(100dvh-10rem)] flex-col overflow-y-auto lg:max-h-[70vh] lg:flex-row">
 
                                 {/* Columna izquierda — inputs */}
-                                <div className="flex flex-1 flex-col gap-4 border-b border-blue-400/10 px-5 py-5 sm:px-7 lg:border-b-0 lg:border-r">
+                                <div className="flex flex-1 flex-col gap-4 border-b border-white/10 px-5 py-5 sm:px-7 lg:border-b-0 lg:border-r">
 
                                     <div>
                                         <label className="block text-[11px] uppercase tracking-widest text-gray-500 font-medium mb-1.5">
@@ -467,7 +467,7 @@ export function AdminEmpleados() {
                                             value={formData.nombre_completo}
                                             onChange={(e) => setFormData({ ...formData, nombre_completo: e.target.value })}
                                             placeholder="Ej. María López García"
-                                            className="w-full px-3 py-2.5 bg-[#1a1d27] border border-blue-400/20 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500 transition"
+                                            className="w-full px-3 py-2.5 bg-black/20 border border-white/5 rounded-xl text-white text-sm focus:outline-none focus:border-cyan-400 focus:bg-white/10 shadow-inner transition"
                                         />
                                     </div>
 
@@ -480,7 +480,7 @@ export function AdminEmpleados() {
                                                 type="date"
                                                 value={formData.fecha_ingreso}
                                                 onChange={(e) => setFormData({ ...formData, fecha_ingreso: e.target.value })}
-                                                className="w-full px-3 py-2.5 bg-[#1a1d27] border border-blue-400/20 rounded-lg text-gray-400 text-sm focus:outline-none focus:border-blue-500 transition"
+                                                className="w-full px-3 py-2.5 bg-black/20 border border-white/5 rounded-xl text-gray-300 text-sm focus:outline-none focus:border-cyan-400 focus:bg-white/10 shadow-inner transition"
                                             />
                                         </div>
                                         <div>
@@ -491,7 +491,7 @@ export function AdminEmpleados() {
                                                 type="date"
                                                 value={formData.fecha_nacimiento}
                                                 onChange={(e) => setFormData({ ...formData, fecha_nacimiento: e.target.value })}
-                                                className="w-full px-3 py-2.5 bg-[#1a1d27] border border-blue-400/20 rounded-lg text-gray-400 text-sm focus:outline-none focus:border-blue-500 transition"
+                                                className="w-full px-3 py-2.5 bg-black/20 border border-white/5 rounded-xl text-gray-300 text-sm focus:outline-none focus:border-cyan-400 focus:bg-white/10 shadow-inner transition"
                                             />
                                         </div>
                                     </div>
@@ -501,7 +501,7 @@ export function AdminEmpleados() {
                                         <select
                                             value={formData.turno_id}
                                             onChange={(e) => setFormData({ ...formData, turno_id: e.target.value })}
-                                            className="w-full px-3 py-2.5 bg-[#1a1d27] border border-blue-400/20 rounded-lg text-gray-400 text-sm focus:outline-none focus:border-blue-500 transition"
+                                            className="w-full px-3 py-2.5 bg-black/20 border border-white/5 rounded-xl text-gray-300 text-sm focus:outline-none focus:border-cyan-400 focus:bg-white/10 shadow-inner transition"
                                         >
                                             <option value="">Sin asignar</option>
                                             {turnos.map((t) => <option key={t.id} value={t.id}>{t.nombre}</option>)}
@@ -513,7 +513,7 @@ export function AdminEmpleados() {
                                         <select
                                             value={formData.sucursal_id}
                                             onChange={(e) => setFormData({ ...formData, sucursal_id: e.target.value })}
-                                            className="w-full px-3 py-2.5 bg-[#1a1d27] border border-blue-400/20 rounded-lg text-gray-400 text-sm focus:outline-none focus:border-blue-500 transition"
+                                            className="w-full px-3 py-2.5 bg-black/20 border border-white/5 rounded-xl text-gray-300 text-sm focus:outline-none focus:border-cyan-400 focus:bg-white/10 shadow-inner transition"
                                         >
                                             <option value="">Sin asignar</option>
                                             {sucursales.map((s) => <option key={s.id} value={s.id}>{s.nombre}</option>)}
@@ -525,7 +525,7 @@ export function AdminEmpleados() {
                                         <select
                                             value={formData.puesto_id}
                                             onChange={(e) => setFormData({ ...formData, puesto_id: e.target.value })}
-                                            className="w-full px-3 py-2.5 bg-[#1a1d27] border border-blue-400/20 rounded-lg text-gray-400 text-sm focus:outline-none focus:border-blue-500 transition"
+                                            className="w-full px-3 py-2.5 bg-black/20 border border-white/5 rounded-xl text-gray-300 text-sm focus:outline-none focus:border-cyan-400 focus:bg-white/10 shadow-inner transition"
                                         >
                                             <option value="">Sin asignar</option>
                                             {puestos.filter(p => p.activo).map((p) => <option key={p.id} value={p.id}>{p.nombre}</option>)}
@@ -534,7 +534,7 @@ export function AdminEmpleados() {
 
                                     <div>
                                         <label className="block text-[11px] uppercase tracking-widest text-gray-500 font-medium mb-2">Días de descanso</label>
-                                        <div className="grid grid-cols-2 gap-2 rounded-lg border border-blue-400/10 bg-[#1a1d27] p-3 sm:grid-cols-3">
+                                        <div className="grid grid-cols-2 gap-2 rounded-xl border border-white/5 bg-black/20 p-3 shadow-inner sm:grid-cols-3">
                                             {DAYS_OF_WEEK.map((day) => (
                                                 <label key={day.value} className="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
                                                     <input
@@ -552,7 +552,7 @@ export function AdminEmpleados() {
                                                                 };
                                                             });
                                                         }}
-                                                        className="h-4 w-4 accent-blue-600"
+                                                        className="h-4 w-4 accent-cyan-500"
                                                     />
                                                     <span>{day.label}</span>
                                                 </label>
@@ -561,7 +561,7 @@ export function AdminEmpleados() {
                                         <p className="mt-2 text-[11px] text-gray-500">Marca uno o varios días según el descanso fijo del empleado.</p>
                                     </div>
 
-                                    <div className="space-y-3 rounded-lg border border-white/10 bg-neutral-900/60 p-4 backdrop-blur-md">
+                                    <div className="space-y-3 border border-white/10 bg-black/20 p-4 shadow-inner rounded-xl">
                                         <label className="flex items-center gap-3 cursor-pointer">
                                             <input
                                                 type="checkbox"
@@ -571,7 +571,7 @@ export function AdminEmpleados() {
                                                     registro_facial_pendiente: e.target.checked,
                                                     registro_facial_horas: e.target.checked ? formData.registro_facial_horas : 48,
                                                 })}
-                                                className="h-4 w-4 accent-blue-600"
+                                                className="h-4 w-4 accent-cyan-500"
                                             />
                                             <span className="text-sm text-gray-200 font-medium">Registro facial pendiente</span>
                                         </label>
@@ -582,7 +582,7 @@ export function AdminEmpleados() {
                                                 <select
                                                     value={formData.registro_facial_horas}
                                                     onChange={(e) => setFormData({ ...formData, registro_facial_horas: Number(e.target.value) })}
-                                                    className="w-full px-3 py-2.5 bg-[#1a1d27] border border-blue-400/20 rounded-lg text-gray-300 text-sm focus:outline-none focus:border-blue-500 transition"
+                                                    className="w-full px-3 py-2.5 bg-black/20 border border-white/5 rounded-xl text-gray-300 text-sm focus:outline-none focus:border-cyan-400 focus:bg-white/10 shadow-inner transition"
                                                 >
                                                     <option value={24}>24 horas</option>
                                                     <option value={48}>48 horas</option>
@@ -593,12 +593,12 @@ export function AdminEmpleados() {
                                         )}
                                     </div>
 
-                                    <label className="flex items-center gap-3 px-3 py-2.5 bg-[#1a1d27] border border-blue-400/10 rounded-lg cursor-pointer hover:border-blue-400/25 transition">
+                                    <label className="flex items-center gap-3 px-3 py-2.5 bg-black/20 border border-white/5 rounded-xl shadow-inner cursor-pointer hover:border-cyan-400/30 transition">
                                         <input
                                             type="checkbox"
                                             checked={formData.aplica_bono}
                                             onChange={(e) => setFormData({ ...formData, aplica_bono: e.target.checked })}
-                                            className="w-4 h-4 accent-blue-600"
+                                            className="w-4 h-4 accent-cyan-500"
                                         />
                                         <span className="text-sm text-gray-300">Elegible para bonos de puntualidad</span>
                                     </label>
@@ -615,12 +615,12 @@ export function AdminEmpleados() {
                                             <img
                                                 src={fotoBase64}
                                                 alt="Foto capturada"
-                                                className="w-full aspect-square object-cover rounded-lg border border-blue-400/20"
+                                                className="w-full aspect-square object-cover rounded-lg border border-white/10"
                                             />
                                             <button
                                                 type="button"
                                                 onClick={() => { setFotoBase64(null); activarCamara(); }}
-                                                className="w-full py-2 bg-[#1a1d27] text-gray-400 border border-white/10 rounded-lg hover:bg-white/5 transition text-sm flex items-center justify-center gap-2"
+                                                className="w-full py-2 bg-white/5 text-gray-400 border border-white/10 rounded-xl hover:bg-white/10 transition text-sm flex items-center justify-center gap-2"
                                             >
                                                 <Camera size={14} />
                                                 Retomar foto
@@ -634,12 +634,12 @@ export function AdminEmpleados() {
                                                 playsInline
                                                 muted
                                                 onCanPlay={(e) => e.target.play()}
-                                                className="w-full aspect-square object-cover rounded-lg border border-blue-400/20 bg-black"
+                                                className="w-full aspect-square object-cover rounded-lg border border-white/10 bg-black"
                                             />
                                             <button
                                                 type="button"
                                                 onClick={capturarFoto}
-                                                className="w-full py-2.5 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition text-sm flex items-center justify-center gap-2"
+                                                className="w-full py-2.5 bg-cyan-600 text-white font-medium rounded-xl hover:bg-cyan-500 shadow-lg shadow-cyan-900/20 transition text-sm flex items-center justify-center gap-2"
                                             >
                                                 <Camera size={14} />
                                                 Capturar
@@ -647,7 +647,7 @@ export function AdminEmpleados() {
                                             <button
                                                 type="button"
                                                 onClick={detenerCamara}
-                                                className="w-full py-2 bg-transparent text-gray-500 border border-white/10 rounded-lg hover:bg-white/5 transition text-sm"
+                                                className="w-full py-2 bg-transparent text-gray-500 border border-white/10 rounded-xl hover:bg-white/5 transition text-sm"
                                             >
                                                 Cancelar
                                             </button>
@@ -655,8 +655,8 @@ export function AdminEmpleados() {
                                     ) : (
                                         <div className="flex flex-col gap-3">
                                             {empleadoEditando?.face_id && (
-                                                <div className="p-3 bg-blue-900/20 border border-blue-500/20 rounded-lg">
-                                                    <p className="text-blue-400 text-xs leading-relaxed">
+                                                <div className="p-3 bg-cyan-500/10 border border-cyan-400/20 rounded-xl">
+                                                    <p className="text-cyan-300 text-xs leading-relaxed">
                                                         Rostro ya registrado. Activa la cámara solo si deseas reemplazarlo.
                                                     </p>
                                                 </div>
@@ -664,7 +664,7 @@ export function AdminEmpleados() {
                                             <button
                                                 type="button"
                                                 onClick={activarCamara}
-                                                className="w-full border border-dashed border-blue-400/20 rounded-lg hover:border-blue-500/50 text-gray-500 hover:text-blue-400 transition flex flex-col items-center justify-center gap-3 bg-[#1a1d27]"
+                                                className="w-full border border-dashed border-white/10 rounded-xl hover:border-cyan-400/50 bg-black/20 shadow-inner text-slate-500 hover:text-cyan-400 transition flex flex-col items-center justify-center gap-3"
                                                 style={{ aspectRatio: '4/3' }}
                                             >
                                                 <Camera size={28} className="opacity-40" />
@@ -678,18 +678,18 @@ export function AdminEmpleados() {
                             </div>
 
                             {/* Footer */}
-                            <div className="flex gap-3 border-t border-blue-400/10 px-5 pb-5 pt-4 sm:px-7 sm:pb-6">
+                            <div className="flex gap-3 border-t border-white/10 px-5 pb-5 pt-4 sm:px-7 sm:pb-6">
                                 <button
                                     type="button"
                                     onClick={cerrarModal}
-                                    className="flex-1 py-2.5 bg-transparent border border-white/10 rounded-lg text-gray-400 text-sm hover:bg-white/5 transition"
+                                    className="flex-1 py-2.5 bg-white/5 border border-white/10 rounded-xl text-gray-300 text-sm font-medium hover:bg-white/10 transition"
                                 >
                                     Cancelar
                                 </button>
                                 <button
                                     type="submit"
                                     disabled={guardando}
-                                    className="flex-2 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                                    className="flex-2 py-2.5 bg-cyan-600 text-white text-sm font-medium rounded-xl hover:bg-cyan-500 shadow-lg shadow-cyan-900/20 disabled:opacity-50 disabled:cursor-not-allowed transition"
                                 >
                                     {guardando ? 'Guardando...' : 'Guardar empleado'}
                                 </button>
@@ -698,6 +698,6 @@ export function AdminEmpleados() {
                     </div>
                 </div>
             )}
-        </div>
+    </div>
     );
 }

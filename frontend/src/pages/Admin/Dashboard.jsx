@@ -16,11 +16,11 @@ import { AuthContext } from '../../context/AuthContext';
 
 const quickActions = [
   {
-    to: '/admin/reportes',
-    label: 'Reportes',
-    description: 'Ver actividad',
-    icon: BarChart3,
-    accent: 'cyan',
+    to: '/admin/registros',
+    label: 'Registros',
+    description: 'Consultar entradas y salidas',
+    icon: Clock3,
+    accent: 'amber',
   },
   {
     to: '/admin/empleados',
@@ -35,20 +35,6 @@ const quickActions = [
     description: 'Aprobar o rechazar equipos',
     icon: Smartphone,
     accent: 'rose',
-  },
-  {
-    to: '/admin/registros',
-    label: 'Registros',
-    description: 'Consultar entradas y salidas',
-    icon: Clock3,
-    accent: 'amber',
-  },
-  {
-    to: '/admin/empleados',
-    label: 'Empleados',
-    description: 'Administrar personal',
-    icon: Users2,
-    accent: 'blue',
   },
 ];
 
@@ -149,7 +135,7 @@ export function AdminDashboard() {
           </section>
 
        
-        <section className="grid gap-4 lg:grid-cols-[1.3fr_0.7fr]">
+        <section className="grid gap-4 lg">
           <div className="rounded-3xl border border-white/10 bg-white/5 p-5 shadow-[0_18px_60px_rgba(0,0,0,0.2)] backdrop-blur-xl sm:p-6">
             <div className="flex items-end justify-between gap-3">
               <div>
@@ -183,38 +169,6 @@ export function AdminDashboard() {
                   </Link>
                 );
               })}
-            </div>
-          </div>
-
-          <div className="grid gap-4">
-            <div className="rounded-3xl border border-rose-400/15 bg-rose-500/8 p-5 shadow-[0_18px_60px_rgba(127,29,29,0.16)] backdrop-blur-xl sm:p-6">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <p className="text-[11px] uppercase tracking-[0.3em] text-rose-200/80">Revisar dispositivos</p>
-                  <p className="mt-3 text-4xl font-light text-rose-300">{resumen.dispositivosPendientes}</p>
-                </div>
-                <Smartphone size={28} className="text-rose-200/80" />
-              </div>
-              <p className="mt-4 text-sm text-rose-100/80">
-                {resumen.dispositivosPendientes > 0
-                  ? 'Hay equipos esperando aprobación para operar en sucursal.'
-                  : 'No hay dispositivos en espera de aprobación.'}
-              </p>
-            </div>
-
-            <div className="rounded-3xl border border-amber-400/15 bg-amber-500/8 p-5 shadow-[0_18px_60px_rgba(120,53,15,0.16)] backdrop-blur-xl sm:p-6">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <p className="text-[11px] uppercase tracking-[0.3em] text-amber-100/80">Faltan rostros</p>
-                  <p className="mt-3 text-4xl font-light text-amber-300">{resumen.facialesPendientes}</p>
-                </div>
-                <CheckCircle2 size={28} className="text-amber-100/80" />
-              </div>
-              <p className="mt-4 text-sm text-amber-50/80">
-                {resumen.facialesPendientes > 0
-                  ? 'Hay empleados que deben completar su registro facial.'
-                  : 'No existen registros faciales pendientes.'}
-              </p>
             </div>
           </div>
         </section>

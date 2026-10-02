@@ -258,5 +258,6 @@ export function AdminNomina() {
                 </table>
             </div>
         </div>
+      </div>
     );
 }

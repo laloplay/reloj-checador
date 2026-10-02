@@ -148,7 +148,7 @@ export function AdminAusencias() {
 
   if (cargando) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-neutral-950">
+      <div className="relative min-h-screen overflow-hidden bg-slate-950 text-white flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
           <p className="text-gray-400 tracking-wide">Cargando ausencias...</p>
@@ -158,30 +158,35 @@ export function AdminAusencias() {
   }
 
   return (
-    <div className="min-h-screen bg-neutral-950 p-8">
-      <div className="max-w-7xl mx-auto">
-        <div className="flex items-center justify-between mb-12 gap-4 flex-wrap">
-          <div>
-            <h1 className="text-4xl font-light text-white tracking-wide">Ausencias</h1>
-            <p className="text-gray-400 text-sm mt-2">Vacaciones, permisos y descansos del personal</p>
-          </div>
-          <button
-            onClick={abrirModalCrear}
-            className="inline-flex items-center gap-2 px-4 py-3 bg-linear-to-r from-blue-600 to-blue-700 text-white font-semibold rounded-lg hover:from-blue-700 hover:to-blue-800 transition"
-          >
-            <Plus size={20} />
-            Nueva ausencia
-          </button>
+    <div className="relative min-h-screen overflow-hidden bg-slate-950 text-white">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.14),transparent_32%),radial-gradient(circle_at_top_right,rgba(59,130,246,0.18),transparent_30%),radial-gradient(circle_at_bottom,rgba(15,23,42,0.96),rgba(2,6,23,1))]" />
+      <div className="absolute inset-0 opacity-[0.03] bg-[linear-gradient(rgba(255,255,255,0.9)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.9)_1px,transparent_1px)] bg-size-[36px_36px]" />
+      <div className="relative mx-auto flex max-w-7xl flex-col gap-6 px-4 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
+        <div className="mb-6 flex flex-col gap-4 sm:mb-8 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+                <div className="inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-500/10 px-3 py-1 text-[10px] font-medium uppercase tracking-[0.28em] text-cyan-100">
+                    <UserRound size={12} />
+                    Gestión de personal
+                </div>
+                <h1 className="mt-3 text-3xl font-medium tracking-tight text-white sm:text-4xl">Ausencias</h1>
+            </div>
+            <button
+                onClick={abrirModalCrear}
+                className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-cyan-600 px-4 py-3 text-sm font-medium text-white shadow-lg shadow-cyan-950/30 transition hover:bg-cyan-500 active:scale-[0.99] sm:w-auto"
+            >
+                <Plus size={18} />
+                Nueva ausencia
+            </button>
         </div>
 
-        <div className="bg-neutral-900 border border-blue-900/30 rounded-lg p-8 mb-12">
+        <div className="rounded-3xl border border-white/10 bg-white/5 p-5 shadow-[0_18px_60px_rgba(0,0,0,0.2)] backdrop-blur-xl sm:p-6 mb-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-end">
             <div>
-              <label className="block text-gray-300 text-sm font-medium mb-2">Filtrar por empleado</label>
+              <label className="block text-[11px] uppercase tracking-widest text-gray-500 font-medium mb-1.5">Filtrar por empleado</label>
               <select
                 value={empleadoFiltro}
                 onChange={(e) => setEmpleadoFiltro(e.target.value)}
-                className="w-full px-4 py-2 bg-neutral-800 border border-blue-900/40 rounded-lg text-white focus:outline-none focus:border-blue-600 transition"
+                className="w-full px-3 py-2.5 bg-black/20 border border-white/5 rounded-xl text-white text-sm focus:outline-none focus:border-cyan-400 focus:bg-white/10 shadow-inner transition"
               >
                 <option value="">Todos los empleados</option>
                 {empleados.map((empleado) => (
@@ -195,7 +200,7 @@ export function AdminAusencias() {
           </div>
         </div>
 
-        <div className="bg-neutral-900 border border-blue-900/30 rounded-lg p-8">
+        <div className="rounded-3xl border border-white/10 bg-white/5 p-5 shadow-[0_18px_60px_rgba(0,0,0,0.2)] backdrop-blur-xl sm:p-6 mb-6">
           <div className="flex items-center justify-between mb-6 gap-4 flex-wrap">
             <div>
               <h2 className="text-2xl font-light text-white tracking-wide">Listado</h2>
@@ -210,7 +215,7 @@ export function AdminAusencias() {
             ) : (
               <table className="w-full border-collapse">
                 <thead>
-                  <tr className="border-b border-blue-900/20">
+                  <tr className="border-b border-white/10">
                     <th className="text-left py-3 px-4 text-gray-300 font-medium text-sm uppercase tracking-widest">Empleado</th>
                     <th className="text-left py-3 px-4 text-gray-300 font-medium text-sm uppercase tracking-widest">Tipo</th>
                     <th className="text-left py-3 px-4 text-gray-300 font-medium text-sm uppercase tracking-widest">Fechas</th>
@@ -221,7 +226,7 @@ export function AdminAusencias() {
                 </thead>
                 <tbody>
                   {ausencias.map((ausencia) => (
-                    <tr key={ausencia.id} className="border-b border-blue-900/10 hover:bg-blue-900/5 transition">
+                    <tr key={ausencia.id} className="border-b border-white/10 hover:bg-cyan-500/5 transition">
                       <td className="py-4 px-4 text-white font-medium">{ausencia.empleado_nombre_completo || 'Sin empleado'}</td>
                       <td className="py-4 px-4">
                         <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium border ${ausencia.tipo === 'vacaciones'
@@ -255,13 +260,13 @@ export function AdminAusencias() {
                         <div className="flex gap-2 justify-center">
                           <button
                             onClick={() => abrirModalEditar(ausencia)}
-                            className="inline-flex items-center gap-1 px-3 py-2 bg-blue-900/30 text-blue-400 border border-blue-600/30 rounded-lg hover:bg-blue-900/50 transition text-sm"
+                            className="inline-flex items-center gap-1 px-3 py-2 bg-cyan-500/10 text-cyan-300 border border-cyan-400/20 rounded-xl hover:bg-cyan-500/20 transition text-sm"
                           >
                             <Edit size={16} />
                           </button>
                           <button
                             onClick={() => eliminarAusencia(ausencia.id)}
-                            className="inline-flex items-center gap-1 px-3 py-2 bg-red-900/30 text-red-400 border border-red-600/30 rounded-lg hover:bg-red-900/50 transition text-sm"
+                            className="inline-flex items-center gap-1 px-3 py-2 bg-red-900/30 text-red-400 border border-red-600/30 rounded-xl hover:bg-red-900/50 transition text-sm"
                           >
                             <X size={16} />
                           </button>
@@ -277,24 +282,31 @@ export function AdminAusencias() {
       </div>
 
       {modalAbierto && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-neutral-900 border border-blue-900/30 rounded-lg p-8 max-w-lg w-full">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-light text-white tracking-wide">
-                {ausenciaEditando ? 'Editar ausencia' : 'Nueva ausencia'}
-              </h2>
-              <button onClick={() => setModalAbierto(false)} className="text-gray-400 hover:text-gray-300">
-                <X size={24} />
-              </button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-3 backdrop-blur-md sm:p-4">
+          <div className="rounded-3xl border border-white/10 bg-white/5 p-5 shadow-[0_18px_60px_rgba(0,0,0,0.2)] backdrop-blur-xl sm:p-6 mb-6 max-w-lg w-full">
+            <div className="flex items-center justify-between border-b border-white/10 px-5 pb-4 pt-5 sm:px-7 sm:pb-5 sm:pt-6">
+            <div>
+                <p className="text-[11px] uppercase tracking-widest text-gray-500 font-medium mb-0.5">Gestión de personal</p>
+                <h2 className="text-lg font-light text-gray-100 tracking-wide m-0">
+                    {ausenciaEditando ? 'Editar ausencia' : 'Nueva ausencia'}
+                </h2>
             </div>
+            <button
+                onClick={() => setModalAbierto(false)}
+                className="w-8 h-8 flex items-center justify-center rounded-xl bg-white/5 border border-white/10 text-gray-400 hover:text-gray-200 hover:bg-white/10 transition"
+            >
+                <X size={16} />
+            </button>
+        </div>
 
-            <form onSubmit={guardarAusencia} className="space-y-4">
+            <form onSubmit={guardarAusencia} className="flex flex-col max-h-[calc(100dvh-10rem)]">
+          <div className="flex flex-col gap-4 px-5 py-5 sm:px-7 overflow-y-auto">
               <div>
-                <label className="block text-gray-300 text-sm font-medium mb-2">Empleado</label>
+                <label className="block text-[11px] uppercase tracking-widest text-gray-500 font-medium mb-1.5">Empleado</label>
                 <select
                   value={formData.empleado_id}
                   onChange={(e) => setFormData({ ...formData, empleado_id: e.target.value })}
-                  className="w-full px-4 py-2 bg-neutral-800 border border-blue-900/40 rounded-lg text-white focus:outline-none focus:border-blue-600 transition"
+                  className="w-full px-3 py-2.5 bg-black/20 border border-white/5 rounded-xl text-white text-sm focus:outline-none focus:border-cyan-400 focus:bg-white/10 shadow-inner transition"
                 >
                   <option value="">Selecciona un empleado</option>
                   {empleados.map((empleado) => (
@@ -304,11 +316,11 @@ export function AdminAusencias() {
               </div>
 
               <div>
-                <label className="block text-gray-300 text-sm font-medium mb-2">Tipo</label>
+                <label className="block text-[11px] uppercase tracking-widest text-gray-500 font-medium mb-1.5">Tipo</label>
                 <select
                   value={formData.tipo}
                   onChange={(e) => setFormData({ ...formData, tipo: e.target.value })}
-                  className="w-full px-4 py-2 bg-neutral-800 border border-blue-900/40 rounded-lg text-white focus:outline-none focus:border-blue-600 transition"
+                  className="w-full px-3 py-2.5 bg-black/20 border border-white/5 rounded-xl text-white text-sm focus:outline-none focus:border-cyan-400 focus:bg-white/10 shadow-inner transition"
                 >
                   {TIPOS.map((tipo) => (
                     <option key={tipo.value} value={tipo.value}>{tipo.label}</option>
@@ -318,36 +330,36 @@ export function AdminAusencias() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-gray-300 text-sm font-medium mb-2">Fecha inicio</label>
+                  <label className="block text-[11px] uppercase tracking-widest text-gray-500 font-medium mb-1.5">Fecha inicio</label>
                   <input
                     type="date"
                     value={formData.fecha_inicio}
                     onChange={(e) => setFormData({ ...formData, fecha_inicio: e.target.value })}
-                    className="w-full px-4 py-2 bg-neutral-800 border border-blue-900/40 rounded-lg text-white focus:outline-none focus:border-blue-600 transition"
+                    className="w-full px-3 py-2.5 bg-black/20 border border-white/5 rounded-xl text-white text-sm focus:outline-none focus:border-cyan-400 focus:bg-white/10 shadow-inner transition"
                   />
                 </div>
                 <div>
-                  <label className="block text-gray-300 text-sm font-medium mb-2">Fecha fin</label>
+                  <label className="block text-[11px] uppercase tracking-widest text-gray-500 font-medium mb-1.5">Fecha fin</label>
                   <input
                     type="date"
                     value={formData.fecha_fin}
                     onChange={(e) => setFormData({ ...formData, fecha_fin: e.target.value })}
-                    className="w-full px-4 py-2 bg-neutral-800 border border-blue-900/40 rounded-lg text-white focus:outline-none focus:border-blue-600 transition"
+                    className="w-full px-3 py-2.5 bg-black/20 border border-white/5 rounded-xl text-white text-sm focus:outline-none focus:border-cyan-400 focus:bg-white/10 shadow-inner transition"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-gray-300 text-sm font-medium mb-2">Motivo</label>
+                <label className="block text-[11px] uppercase tracking-widest text-gray-500 font-medium mb-1.5">Motivo</label>
                 <textarea
                   value={formData.motivo}
                   onChange={(e) => setFormData({ ...formData, motivo: e.target.value })}
                   rows="4"
-                  className="w-full px-4 py-2 bg-neutral-800 border border-blue-900/40 rounded-lg text-white focus:outline-none focus:border-blue-600 transition"
+                  className="w-full px-3 py-2.5 bg-black/20 border border-white/5 rounded-xl text-white text-sm focus:outline-none focus:border-cyan-400 focus:bg-white/10 shadow-inner transition"
                 />
               </div>
 
-              <label className="flex items-center gap-3 px-4 py-3 bg-neutral-800 border border-blue-900/40 rounded-lg cursor-pointer">
+              <label className="flex items-center gap-3 px-3 py-2.5 bg-black/20 border border-white/5 rounded-xl shadow-inner cursor-pointer hover:border-cyan-400/30 transition">
                 <input
                   type="checkbox"
                   checked={formData.aprobado}
@@ -357,23 +369,24 @@ export function AdminAusencias() {
                 <span className="text-sm text-gray-300">Aprobada</span>
               </label>
 
-              <div className="flex gap-3 pt-6">
-                <button
-                  type="button"
-                  onClick={() => setModalAbierto(false)}
-                  className="flex-1 py-2 bg-neutral-800 text-gray-300 border border-neutral-700 rounded-lg hover:bg-neutral-700 transition"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  disabled={guardando}
-                  className="flex-1 py-2 bg-linear-to-r from-blue-600 to-blue-700 text-white font-semibold rounded-lg hover:from-blue-700 hover:to-blue-800 disabled:opacity-50 disabled:cursor-not-allowed transition"
-                >
-                  {guardando ? 'Guardando...' : 'Guardar'}
-                </button>
-              </div>
-            </form>
+                        </div>
+          <div className="flex gap-3 border-t border-white/10 px-5 pb-5 pt-4 sm:px-7 sm:pb-6">
+            <button
+                type="button"
+                onClick={() => setModalAbierto(false)}
+                className="flex-1 py-2.5 bg-white/5 border border-white/10 rounded-xl text-gray-300 text-sm font-medium hover:bg-white/10 transition"
+            >
+                Cancelar
+            </button>
+            <button
+                type="submit"
+                disabled={guardando}
+                className="flex-1 py-2.5 bg-cyan-600 text-white text-sm font-medium rounded-xl hover:bg-cyan-500 shadow-lg shadow-cyan-900/20 disabled:opacity-50 disabled:cursor-not-allowed transition"
+            >
+                {guardando ? 'Guardando...' : 'Guardar'}
+            </button>
+          </div>
+        </form>
           </div>
         </div>
       )}
