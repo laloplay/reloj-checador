@@ -298,7 +298,7 @@ export function AdminDispositivos() {
                           <select
                             value={sucursalesSeleccionadas[dispositivo.id] || ''}
                             onChange={(e) => handleSucursalChange(dispositivo.id, e.target.value)}
-                            className="px-3 py-2 bg-black/20 border border-white/5 rounded-xl text-white text-sm focus:outline-none focus:border-cyan-400 focus:bg-white/10 shadow-inner transition transition"
+                            className="px-3 py-2 bg-black/20 border border-white/5 rounded-xl text-white text-sm focus:outline-none focus:border-cyan-400 focus:bg-white/10 shadow-inner transition"
                             onClick={(e) => e.stopPropagation()}
                           >
                             <option value="" disabled>Asignar sucursal</option>
@@ -313,7 +313,7 @@ export function AdminDispositivos() {
                           <select
                             value={tiposSeleccionados[dispositivo.id] || 'kiosco'}
                             onChange={(e) => handleTipoChange(dispositivo.id, e.target.value)}
-                            className="px-3 py-2 bg-black/20 border border-white/5 rounded-xl text-white text-sm focus:outline-none focus:border-cyan-400 focus:bg-white/10 shadow-inner transition transition"
+                            className="px-3 py-2 bg-black/20 border border-white/5 rounded-xl text-white text-sm focus:outline-none focus:border-cyan-400 focus:bg-white/10 shadow-inner transition"
                             onClick={(e) => e.stopPropagation()}
                           >
                             <option value="kiosco">🖥️ Kiosco</option>
