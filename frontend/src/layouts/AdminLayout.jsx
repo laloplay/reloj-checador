@@ -133,12 +133,12 @@ export function AdminLayout() {
         }`}
       >
         <div className="flex h-full flex-col gap-4 md:gap-3">
-          <div className="flex items-center justify-between gap-3 md:block">
-            <Logo size="header" />
+          <div className="relative flex items-center justify-center py-1 md:py-2">
+            <Logo size="header" className="mx-auto" />
             <button
               type="button"
               onClick={closeMobileMenu}
-              className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-white md:hidden"
+              className="absolute right-0 inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-white md:hidden"
             >
               <X size={18} />
             </button>
@@ -241,8 +241,8 @@ export function AdminLayout() {
               <Menu size={20} />
             </button>
 
-            <div className="min-w-0 text-center">
-              <Logo size="header" />
+            <div className="flex min-w-0 flex-1 items-center justify-center text-center">
+              <Logo size="header" className="mx-auto" />
             </div>
 
             <button
