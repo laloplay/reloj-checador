@@ -46,14 +46,6 @@ const navigationItems = [
             { path: '/admin/nomina', label: 'Nómina', icon: DollarSign },
         ],
     },
-    {
-        type: 'group',
-        key: 'ajustes',
-        label: 'Ajustes',
-        items: [
-            { path: '/admin/dispositivos', label: 'Dispositivos', icon: Settings },
-        ],
-    },
 ];
 
 const initialOpenGroups = navigationItems.reduce((accumulator, item) => {
@@ -218,6 +210,19 @@ export function AdminLayout() {
               );
             })}
           </nav>
+
+          <Link
+            to="/admin/ajustes"
+            onClick={closeMobileMenu}
+            className={`flex items-center gap-3 rounded-2xl px-4 py-3 transition w-full ${
+              ['/admin/ajustes', '/admin/dispositivos', '/admin/usuarios'].includes(location.pathname)
+                ? 'border border-cyan-400/20 bg-cyan-500/10 text-white'
+                : 'border border-transparent text-slate-400 hover:border-white/10 hover:bg-white/5 hover:text-white'
+            }`}
+          >
+            <Settings size={18} />
+            <span className="font-medium">Ajustes</span>
+          </Link>
 
           <button
             onClick={handleLogout}

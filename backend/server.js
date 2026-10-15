@@ -24,6 +24,7 @@ const sucursalesRoutes = require('./routes/sucursales');
 const puestosRoutes = require('./routes/puestos');
 const nominaRoutes = require('./routes/nomina');
 const portalRoutes = require('./routes/portal');
+const usuariosRoutes = require('./routes/usuarios');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/checadas', checadasRoutes);
@@ -40,6 +41,7 @@ app.use('/api/sucursales', sucursalesRoutes);
 app.use('/api/puestos', puestosRoutes);
 app.use('/api/nomina', nominaRoutes);
 app.use('/api/portal', portalRoutes);
+app.use('/api/usuarios', usuariosRoutes);
 
 const PORT = process.env.PORT || 3001;
 

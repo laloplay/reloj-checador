@@ -18,6 +18,7 @@ import { AdminRegistros } from './pages/Admin/Registros';
 import { AdminFestivos } from './pages/Admin/Festivos';
 import { AdminAusencias } from './pages/Admin/Ausencias';
 import { AdminDispositivos } from './pages/Admin/Dispositivos';
+import { AdminUsuarios } from './pages/Admin/Usuarios';
 import { AuthProvider } from './context/AuthContext';
 import { DeviceProvider } from './context/DeviceContext';
 
@@ -25,6 +26,7 @@ import { DeviceProvider } from './context/DeviceContext';
 import { AdminLayout } from './layouts/AdminLayout';
 import { PrivateRoute } from './components/PrivateRoute';
 import { DeviceCheck } from './components/DeviceCheck';
+import { SettingsOverlay } from './components/SettingsOverlay';
 
 function App() {
     return (
@@ -45,7 +47,9 @@ function App() {
                 <Route path="empleados" element={<AdminEmpleados />} />
                 <Route path="turnos" element={<AdminTurnos />} />
                 <Route path="sucursales" element={<AdminSucursales />} />
+                <Route path="ajustes" element={<SettingsOverlay />} />
                 <Route path="dispositivos" element={<AdminDispositivos />} />
+                <Route path="usuarios" element={<AdminUsuarios />} />
                 <Route path="puestos" element={<AdminPuestos />} />
                 <Route path="nomina" element={<AdminNomina />} />
                 <Route path="registros" element={<AdminRegistros />} />
