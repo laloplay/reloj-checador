@@ -184,7 +184,81 @@ export function AdminTurnos() {
             <p className="mt-1 text-sm text-slate-500">Agrega el primero para comenzar a gestionar los horarios.</p>
           </div>
         ) : (
-        <div className="overflow-hidden rounded-3xl border border-white/10 bg-white/4 shadow-[0_20px_60px_rgba(0,0,0,0.18)] backdrop-blur-xl">
+        <>
+          <div className="grid gap-3 md:hidden">
+            {turnosFiltrados.map((turno) => {
+              const sucursal = sucursales.find((s) => s.id === turno.sucursal_id);
+              const [h, m] = turno.hora_inicio.split(':').map(Number);
+              const duracion = parseFloat(turno.duracion_horas);
+              const finTotalMinutos = h * 60 + m + duracion * 60;
+              const finHora = Math.floor(finTotalMinutos / 60) % 24;
+              const finMinutos = Math.round(finTotalMinutos % 60);
+              const hora_fin = `${String(finHora).padStart(2, '0')}:${String(finMinutos).padStart(2, '0')}`;
+
+              return (
+                <article key={turno.id} className="rounded-2xl border border-white/10 bg-white/4 p-4 shadow-lg shadow-black/10 backdrop-blur-xl">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <h2 className="truncate font-semibold text-white">{turno.nombre}</h2>
+                      <p className="mt-1 text-sm text-slate-400">{`${turno.hora_inicio} → ${hora_fin}`}</p>
+                    </div>
+                    <span className={`shrink-0 rounded-full border px-2.5 py-1 text-xs font-medium ${turno.activo ? 'border-emerald-400/20 bg-emerald-500/10 text-emerald-300' : 'border-rose-400/20 bg-rose-500/10 text-rose-300'}`}>
+                      {turno.activo ? 'Activo' : 'Inactivo'}
+                    </span>
+                  </div>
+                  <dl className="mt-4 grid grid-cols-2 gap-x-3 gap-y-3 border-y border-white/5 py-3 text-sm">
+                    <div>
+                      <dt className="text-[10px] uppercase tracking-wider text-slate-500">Horario</dt>
+                      <dd className="mt-1 truncate text-slate-200">{`${turno.hora_inicio} → ${hora_fin}`}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-[10px] uppercase tracking-wider text-slate-500">Sucursal</dt>
+                      <dd className="mt-1 truncate text-slate-200">{sucursal?.nombre || 'Global'}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-[10px] uppercase tracking-wider text-slate-500">Bono</dt>
+                      <dd className={`mt-1 ${turno.bono_activo ? 'text-emerald-300' : 'text-slate-400'}`}>
+                        {turno.bono_activo ? 'Aplica' : 'No aplica'}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-[10px] uppercase tracking-wider text-slate-500">Minutos bono</dt>
+                      <dd className="mt-1 text-slate-200">{turno.minutos_bono} min</dd>
+                    </div>
+                  </dl>
+                  <div className="mt-3 flex items-center justify-end gap-2">
+                    <button
+                      onClick={() => abrirModalEditar(turno)}
+                      className="inline-flex h-10 items-center gap-2 rounded-xl border border-cyan-400/20 bg-cyan-500/10 px-3 text-sm font-medium text-cyan-100 transition hover:bg-cyan-500/20"
+                    >
+                      <Edit size={16} /> Editar
+                    </button>
+                    {turno.activo ? (
+                      <button
+                        onClick={() => eliminarTurno(turno.id)}
+                        className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-rose-400/20 bg-rose-500/10 text-rose-300 transition hover:bg-rose-500/20"
+                        title="Eliminar turno"
+                        aria-label={`Eliminar ${turno.nombre}`}
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => reactivarTurno(turno.id)}
+                        className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-emerald-400/20 bg-emerald-500/10 text-emerald-300 transition hover:bg-emerald-500/20"
+                        title="Reactivar turno"
+                        aria-label={`Reactivar ${turno.nombre}`}
+                      >
+                        <Power size={16} />
+                      </button>
+                    )}
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+
+        <div className="hidden overflow-hidden rounded-3xl border border-white/10 bg-white/4 shadow-[0_20px_60px_rgba(0,0,0,0.18)] backdrop-blur-xl md:block">
           <div className="overflow-x-auto">
             <table className="w-full min-w-225 border-collapse">
               <thead>
@@ -285,6 +359,7 @@ export function AdminTurnos() {
             </table>
           </div>
         </div>
+        </>
         )}
       </div>
 

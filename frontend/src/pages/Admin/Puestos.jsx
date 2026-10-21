@@ -157,7 +157,61 @@ export function AdminPuestos() {
                         <p className="mt-1 text-sm text-slate-500">Agrega el primero para comenzar a estructurar tu equipo.</p>
                     </div>
                 ) : (
-                <div className="overflow-hidden rounded-3xl border border-white/10 bg-white/4 shadow-[0_20px_60px_rgba(0,0,0,0.18)] backdrop-blur-xl">
+                <>
+                    <div className="grid gap-3 md:hidden">
+                        {puestosFiltrados.map((puesto) => (
+                            <article key={puesto.id} className="rounded-2xl border border-white/10 bg-white/4 p-4 shadow-lg shadow-black/10 backdrop-blur-xl">
+                                <div className="flex items-start justify-between gap-3">
+                                    <div className="min-w-0">
+                                        <h2 className="truncate font-semibold text-white">{puesto.nombre}</h2>
+                                        <p className="mt-1 text-sm text-slate-400">{puesto.descripcion || 'Sin descripción'}</p>
+                                    </div>
+                                    <span className={`shrink-0 rounded-full border px-2.5 py-1 text-xs font-medium ${puesto.activo ? 'border-emerald-400/20 bg-emerald-500/10 text-emerald-300' : 'border-rose-400/20 bg-rose-500/10 text-rose-300'}`}>
+                                        {puesto.activo ? 'Activo' : 'Inactivo'}
+                                    </span>
+                                </div>
+                                <dl className="mt-4 grid grid-cols-2 gap-x-3 gap-y-3 border-y border-white/5 py-3 text-sm">
+                                    <div>
+                                        <dt className="text-[10px] uppercase tracking-wider text-slate-500">Salario Base</dt>
+                                        <dd className="mt-1 font-medium text-slate-200">{formatCurrency(puesto.salario_base)}</dd>
+                                    </div>
+                                    <div>
+                                        <dt className="text-[10px] uppercase tracking-wider text-slate-500">Descripción</dt>
+                                        <dd className="mt-1 truncate text-slate-200">{puesto.descripcion || 'N/A'}</dd>
+                                    </div>
+                                </dl>
+                                <div className="mt-3 flex items-center justify-end gap-2">
+                                    <button
+                                        onClick={() => abrirModalEditar(puesto)}
+                                        className="inline-flex h-10 items-center gap-2 rounded-xl border border-cyan-400/20 bg-cyan-500/10 px-3 text-sm font-medium text-cyan-100 transition hover:bg-cyan-500/20"
+                                    >
+                                        <Edit size={16} /> Editar
+                                    </button>
+                                    {puesto.activo ? (
+                                        <button
+                                            onClick={() => desactivarPuesto(puesto.id)}
+                                            className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-rose-400/20 bg-rose-500/10 text-rose-300 transition hover:bg-rose-500/20"
+                                            title="Desactivar puesto"
+                                            aria-label={`Desactivar ${puesto.nombre}`}
+                                        >
+                                            <PowerOff size={16} />
+                                        </button>
+                                    ) : (
+                                        <button
+                                            onClick={() => reactivarPuesto(puesto.id)}
+                                            className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-emerald-400/20 bg-emerald-500/10 text-emerald-300 transition hover:bg-emerald-500/20"
+                                            title="Reactivar puesto"
+                                            aria-label={`Reactivar ${puesto.nombre}`}
+                                        >
+                                            <Power size={16} />
+                                        </button>
+                                    )}
+                                </div>
+                            </article>
+                        ))}
+                    </div>
+
+                <div className="hidden overflow-hidden rounded-3xl border border-white/10 bg-white/4 shadow-[0_20px_60px_rgba(0,0,0,0.18)] backdrop-blur-xl md:block">
                     <div className="overflow-x-auto">
                         <table className="w-full min-w-225 border-collapse">
                             <thead>
@@ -218,6 +272,7 @@ export function AdminPuestos() {
                         </table>
                     </div>
                 </div>
+                </>
                 )}
             </div>
 

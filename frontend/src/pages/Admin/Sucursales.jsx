@@ -126,7 +126,48 @@ export function AdminSucursales() {
                         <p className="mt-1 text-sm text-slate-500">Agrega la primera sucursal para comenzar.</p>
                     </div>
                 ) : (
-                    <div className="overflow-hidden rounded-3xl border border-white/10 bg-white/4 shadow-[0_20px_60px_rgba(0,0,0,0.18)] backdrop-blur-xl">
+                    <>
+                        <div className="grid gap-3 md:hidden">
+                            {sucursales.map((sucursal) => (
+                                <article key={sucursal.id} className="rounded-2xl border border-white/10 bg-white/4 p-4 shadow-lg shadow-black/10 backdrop-blur-xl">
+                                    <div className="flex items-start justify-between gap-3">
+                                        <div className="min-w-0">
+                                            <h2 className="truncate font-semibold text-white">{sucursal.nombre}</h2>
+                                            <p className="mt-1 text-sm text-slate-400">{sucursal.direccion || 'Sin dirección asignada'}</p>
+                                        </div>
+                                        <span className={`shrink-0 rounded-full border px-2.5 py-1 text-xs font-medium ${sucursal.activo ? 'border-emerald-400/20 bg-emerald-500/10 text-emerald-300' : 'border-rose-400/20 bg-rose-500/10 text-rose-300'}`}>
+                                            {sucursal.activo ? 'Activa' : 'Inactiva'}
+                                        </span>
+                                    </div>
+                                    <dl className="mt-4 grid grid-cols-1 gap-y-3 border-y border-white/5 py-3 text-sm">
+                                        <div>
+                                            <dt className="text-[10px] uppercase tracking-wider text-slate-500">Dirección</dt>
+                                            <dd className="mt-1 text-slate-200">{sucursal.direccion || 'N/A'}</dd>
+                                        </div>
+                                    </dl>
+                                    <div className="mt-3 flex items-center justify-end gap-2">
+                                        <button
+                                            onClick={() => abrirModalEditar(sucursal)}
+                                            className="inline-flex h-10 items-center gap-2 rounded-xl border border-cyan-400/20 bg-cyan-500/10 px-3 text-sm font-medium text-cyan-100 transition hover:bg-cyan-500/20"
+                                        >
+                                            <Edit size={16} /> Editar
+                                        </button>
+                                        {sucursal.activo && (
+                                            <button
+                                                onClick={() => desactivarSucursal(sucursal.id)}
+                                                className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-rose-400/20 bg-rose-500/10 text-rose-300 transition hover:bg-rose-500/20"
+                                                title="Desactivar sucursal"
+                                                aria-label={`Desactivar ${sucursal.nombre}`}
+                                            >
+                                                <PowerOff size={16} />
+                                            </button>
+                                        )}
+                                    </div>
+                                </article>
+                            ))}
+                        </div>
+
+                    <div className="hidden overflow-hidden rounded-3xl border border-white/10 bg-white/4 shadow-[0_20px_60px_rgba(0,0,0,0.18)] backdrop-blur-xl md:block">
                       <div className="overflow-x-auto">
                         <table className="w-full min-w-225 border-collapse">
                             <thead>
@@ -192,6 +233,7 @@ export function AdminSucursales() {
                         </table>
                       </div>
                     </div>
+                    </>
                 )}
 
             {modalAbierto && (
