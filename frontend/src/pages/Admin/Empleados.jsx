@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Plus, Edit, UserX, X, Camera, Volume2, Users } from 'lucide-react';
+import { Plus, Edit, UserX, X, Camera, Volume2, Users, Search, Building } from 'lucide-react';
 import api from '../../services/api';
 
 const DAYS_OF_WEEK = [
@@ -49,6 +49,8 @@ export function AdminEmpleados() {
     const [camaraActiva, setCamaraActiva] = useState(false);
     const [streamCamara, setStreamCamara] = useState(null);
     const [guardando, setGuardando] = useState(false);
+    const [busquedaNombre, setBusquedaNombre] = useState('');
+    const [sucursalFiltro, setSucursalFiltro] = useState('');
     const videoRef = useRef(null);
     const canvasRef = useRef(null);
 
@@ -252,20 +254,31 @@ export function AdminEmpleados() {
         );
     }
 
+    const empleadosFiltrados = empleados.filter((empleado) => {
+        const coincideNombre = (empleado.nombre_completo || '')
+            .toLowerCase()
+            .includes(busquedaNombre.trim().toLowerCase());
+        const coincideSucursal =
+            !sucursalFiltro ||
+            (sucursalFiltro === 'sin_asignar'
+                ? !empleado.sucursal_id
+                : String(empleado.sucursal_id) === String(sucursalFiltro));
+        return coincideNombre && coincideSucursal;
+    });
+
     return (
     <div className="relative min-h-screen overflow-hidden bg-slate-950 text-white">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.14),transparent_32%),radial-gradient(circle_at_top_right,rgba(59,130,246,0.18),transparent_30%),radial-gradient(circle_at_bottom,rgba(15,23,42,0.96),rgba(2,6,23,1))]" />
       <div className="absolute inset-0 opacity-[0.03] bg-[linear-gradient(rgba(255,255,255,0.9)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.9)_1px,transparent_1px)] bg-size-[36px_36px]" />
 
       <div className="relative mx-auto flex max-w-7xl flex-col gap-6 px-4 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
-                <div className="mb-6 flex flex-col gap-4 sm:mb-8 sm:flex-row sm:items-end sm:justify-between">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                     <div>
-                        <div className="inline-flex items-center gap-2 rounded-lg border border-cyan-400/20  px-3 py-1 text-[10px] font-medium uppercase tracking-[0.28em] text-cyan-100">
+                        <div className="inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-500/10 px-3 py-1 text-[10px] font-medium uppercase tracking-[0.28em] text-cyan-100">
                             <Users size={12} />
                             Gestión de personal
                         </div>
                         <h1 className="mt-3 text-3xl font-medium tracking-tight text-white sm:text-4xl">Empleados</h1>
-                        
                     </div>
                     <button
                         onClick={abrirModalCrear}
@@ -276,16 +289,87 @@ export function AdminEmpleados() {
                     </button>
                 </div>
 
+                {/* Buscador por nombre y filtro por sucursal */}
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-12">
+                    <div className="relative sm:col-span-7 lg:col-span-8">
+                        <Search
+                            size={18}
+                            className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+                        />
+                        <input
+                            type="text"
+                            value={busquedaNombre}
+                            onChange={(e) => setBusquedaNombre(e.target.value)}
+                            placeholder="Buscar empleado por nombre..."
+                            className="w-full rounded-2xl border border-white/10 bg-white/4 py-3 pl-11 pr-10 text-sm text-white placeholder-slate-500 shadow-[0_12px_32px_rgba(0,0,0,0.16)] backdrop-blur-xl transition focus:border-cyan-400 focus:bg-white/8 focus:outline-none"
+                        />
+                        {busquedaNombre && (
+                            <button
+                                type="button"
+                                onClick={() => setBusquedaNombre('')}
+                                aria-label="Limpiar búsqueda"
+                                className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-1 text-slate-400 transition hover:bg-white/10 hover:text-white"
+                            >
+                                <X size={16} />
+                            </button>
+                        )}
+                    </div>
+
+                    <div className="relative sm:col-span-5 lg:col-span-4">
+                        <Building
+                            size={18}
+                            className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+                        />
+                        <select
+                            value={sucursalFiltro}
+                            onChange={(e) => setSucursalFiltro(e.target.value)}
+                            className="w-full rounded-2xl border border-white/10 bg-white/4 py-3 pl-11 pr-4 text-sm text-white shadow-[0_12px_32px_rgba(0,0,0,0.16)] backdrop-blur-xl transition focus:border-cyan-400 focus:bg-white/8 focus:outline-none"
+                        >
+                            <option value="" className="bg-slate-900 text-white">
+                                Todas las sucursales
+                            </option>
+                            {sucursales.map((sucursal) => (
+                                <option
+                                    key={sucursal.id}
+                                    value={sucursal.id}
+                                    className="bg-slate-900 text-white"
+                                >
+                                    {sucursal.nombre}
+                                </option>
+                            ))}
+                            <option value="sin_asignar" className="bg-slate-900 text-white">
+                                Sin sucursal asignada
+                            </option>
+                        </select>
+                    </div>
+                </div>
+
                 {empleados.length === 0 ? (
                     <div className="rounded-3xl border border-dashed border-white/10 bg-white/3 px-6 py-16 text-center">
                         <Users className="mx-auto mb-4 text-slate-600" size={34} />
                         <p className="font-medium text-slate-300">No hay empleados registrados</p>
                         <p className="mt-1 text-sm text-slate-500">Agrega el primero para comenzar a gestionar tu equipo.</p>
                     </div>
+                ) : empleadosFiltrados.length === 0 ? (
+                    <div className="rounded-3xl border border-dashed border-white/10 bg-white/3 px-6 py-16 text-center">
+                        <Search className="mx-auto mb-4 text-slate-600" size={34} />
+                        <p className="font-medium text-slate-300">No se encontraron empleados</p>
+                        <p className="mt-1 text-sm text-slate-500">No hay coincidencias con la búsqueda o sucursal seleccionada.</p>
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setBusquedaNombre('');
+                                setSucursalFiltro('');
+                            }}
+                            className="mt-4 inline-flex items-center gap-2 rounded-xl border border-cyan-400/20 bg-cyan-500/10 px-4 py-2 text-xs font-medium text-cyan-200 transition hover:bg-cyan-500/20"
+                        >
+                            Limpiar filtros
+                        </button>
+                    </div>
                 ) : (
                     <>
                         <div className="grid gap-3 md:hidden">
-                            {empleados.map((empleado) => {
+                            {empleadosFiltrados.map((empleado) => {
                                 const turno = turnos.find((t) => t.id === empleado.turno_id);
                                 const sucursal = sucursales.find((s) => s.id === empleado.sucursal_id);
                                 const puesto = puestos.find((p) => p.id === empleado.puesto_id);
@@ -348,7 +432,7 @@ export function AdminEmpleados() {
                                 </tr>
                             </thead>
                             <tbody>
-                                {empleados.map((empleado) => {
+                                {empleadosFiltrados.map((empleado) => {
                                     const turno = turnos.find((t) => t.id === empleado.turno_id);
                                     const sucursal = sucursales.find((s) => s.id === empleado.sucursal_id);
                                     const puesto = puestos.find((p) => p.id === empleado.puesto_id);
@@ -434,7 +518,7 @@ export function AdminEmpleados() {
 
             {modalAbierto && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-3 backdrop-blur-md sm:p-4">
-                    <div className="max-h-[calc(100dvh-1.5rem)] w-full max-w-3xl overflow-hidden rounded-[1.75rem] border border-white/10 bg-white/[0.02] shadow-[0_24px_80px_rgba(0,0,0,0.5)] backdrop-blur-3xl sm:max-h-[calc(100dvh-2rem)]">
+                    <div className="max-h-[calc(100dvh-1.5rem)] w-full max-w-3xl overflow-hidden rounded-[1.75rem] border border-white/10 bg-white/2 shadow-[0_24px_80px_rgba(0,0,0,0.5)] backdrop-blur-3xl sm:max-h-[calc(100dvh-2rem)]">
 
                         {/* Header */}
                         <div className="flex items-center justify-between border-b border-white/10 px-5 pb-4 pt-5 sm:px-7 sm:pb-5 sm:pt-6">
