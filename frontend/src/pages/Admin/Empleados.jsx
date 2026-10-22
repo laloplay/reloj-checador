@@ -274,10 +274,6 @@ export function AdminEmpleados() {
       <div className="relative mx-auto flex max-w-7xl flex-col gap-6 px-4 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                     <div>
-                        <div className="inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-500/10 px-3 py-1 text-[10px] font-medium uppercase tracking-[0.28em] text-cyan-100">
-                            <Users size={12} />
-                            Gestión de personal
-                        </div>
                         <h1 className="mt-3 text-3xl font-medium tracking-tight text-white sm:text-4xl">Empleados</h1>
                     </div>
                     <button
