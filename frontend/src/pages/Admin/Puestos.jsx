@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Plus, Edit, X, Power, PowerOff, Briefcase } from 'lucide-react';
 import api from '../../services/api';
+import { useAlert } from '../../context/AlertContext';
 
 export function AdminPuestos() {
+    const { mostrarAlerta, confirmar } = useAlert();
     const [puestos, setPuestos] = useState([]);
     const [cargando, setCargando] = useState(true);
     const [modalAbierto, setModalAbierto] = useState(false);
@@ -53,7 +55,7 @@ export function AdminPuestos() {
         e.preventDefault();
 
         if (!formData.nombre || formData.salario_base === '') {
-            alert('Por favor, introduce el nombre y el salario base.');
+            mostrarAlerta('Por favor, introduce el nombre y el salario base.', 'warning');
             return;
         }
 
@@ -62,29 +64,38 @@ export function AdminPuestos() {
 
             if (puestoEditando) {
                 await api.put(`/puestos/${puestoEditando.id}`, formData);
+                mostrarAlerta('Puesto actualizado correctamente', 'success');
             } else {
                 await api.post('/puestos', formData);
+                mostrarAlerta('Puesto creado correctamente', 'success');
             }
 
             await cargarPuestos();
             setModalAbierto(false);
         } catch (error) {
             console.error('Error al guardar puesto:', error);
-            alert('Error al guardar el puesto');
+            mostrarAlerta('Error al guardar el puesto', 'error');
         } finally {
             setGuardando(false);
         }
     };
 
     const desactivarPuesto = async (id) => {
-        if (!window.confirm('¿Estás seguro de que quieres desactivar este puesto?')) return;
+        const confirmado = await confirmar({
+            titulo: 'Desactivar puesto',
+            mensaje: '¿Estás seguro de que quieres desactivar este puesto?',
+            textoConfirmar: 'Sí, desactivar',
+            variante: 'danger',
+        });
+        if (!confirmado) return;
 
         try {
             await api.delete(`/puestos/${id}`);
+            mostrarAlerta('Puesto desactivado correctamente', 'success');
             await cargarPuestos();
         } catch (error) {
             console.error('Error al desactivar puesto:', error);
-            alert('Error al desactivar el puesto');
+            mostrarAlerta('Error al desactivar el puesto', 'error');
         }
     };
 
@@ -122,10 +133,6 @@ export function AdminPuestos() {
             <div className="relative mx-auto flex max-w-7xl flex-col gap-6 px-4 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
                 <div className="mb-6 flex flex-col gap-4 sm:mb-8 sm:flex-row sm:items-end sm:justify-between">
                     <div>
-                        <div className="inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-500/10 px-3 py-1 text-[10px] font-medium uppercase tracking-[0.28em] text-cyan-100">
-                            <Briefcase size={12} />
-                            Gestión de personal
-                        </div>
                         <h1 className="mt-3 text-3xl font-medium tracking-tight text-white sm:text-4xl">Puestos</h1>
                     </div>
                     <button
@@ -172,8 +179,13 @@ export function AdminPuestos() {
                                 </div>
                                 <dl className="mt-4 grid grid-cols-2 gap-x-3 gap-y-3 border-y border-white/5 py-3 text-sm">
                                     <div>
-                                        <dt className="text-[10px] uppercase tracking-wider text-slate-500">Salario Base</dt>
-                                        <dd className="mt-1 font-medium text-slate-200">{formatCurrency(puesto.salario_base)}</dd>
+                                        <dt className="text-[10px] uppercase tracking-wider text-slate-500">Salario Quincenal</dt>
+                                        <dd className="mt-1 font-medium text-slate-200">
+                                            {formatCurrency(puesto.salario_base)}
+                                            <span className="block text-xs text-slate-500">
+                                                Diario: {formatCurrency((Number(puesto.salario_base) || 0) / 15)}
+                                            </span>
+                                        </dd>
                                     </div>
                                     <div>
                                         <dt className="text-[10px] uppercase tracking-wider text-slate-500">Descripción</dt>
@@ -223,7 +235,7 @@ export function AdminPuestos() {
                                         Descripción
                                     </th>
                                     <th className="px-5 py-4 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
-                                        Salario Base
+                                        Salario Quincenal / Diario
                                     </th>
                                     <th className="px-5 py-4 text-left text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
                                         Estado
@@ -243,7 +255,8 @@ export function AdminPuestos() {
                                             {puesto.descripcion || 'N/A'}
                                         </td>
                                         <td className="px-4 py-4 text-sm text-slate-400">
-                                            {formatCurrency(puesto.salario_base)}
+                                            <div className="font-medium text-white">{formatCurrency(puesto.salario_base)} <span className="text-xs font-normal text-slate-500">/ qna</span></div>
+                                            <div className="text-xs text-slate-500">Diario: {formatCurrency((Number(puesto.salario_base) || 0) / 15)}</div>
                                         </td>
                                         <td className="px-4 py-4 text-sm text-slate-400">
                                             <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium border ${puesto.activo ? 'bg-green-900/30 text-green-400 border-green-600/30' : 'bg-red-900/30 text-red-400 border-red-600/30'}`}>
@@ -281,7 +294,6 @@ export function AdminPuestos() {
                     <div className="max-h-[calc(100dvh-1.5rem)] w-full max-w-md overflow-hidden rounded-[1.75rem] border border-white/10 bg-white/[0.02] shadow-[0_24px_80px_rgba(0,0,0,0.5)] backdrop-blur-3xl flex flex-col">
                         <div className="flex items-center justify-between border-b border-white/10 px-5 pb-4 pt-5 sm:px-7 sm:pb-5 sm:pt-6">
                             <div>
-                                <p className="text-[11px] uppercase tracking-widest text-gray-500 font-medium mb-0.5">Gestión de personal</p>
                                 <h2 className="text-lg font-light text-gray-100 tracking-wide m-0">{puestoEditando ? 'Editar puesto' : 'Nuevo puesto'}</h2>
                             </div>
                             <button
@@ -315,7 +327,7 @@ export function AdminPuestos() {
                             </div>
 
                             <div>
-                                <label className="block text-[11px] uppercase tracking-widest text-gray-500 font-medium mb-1.5">Salario Base (MXN)</label>
+                                <label className="block text-[11px] uppercase tracking-widest text-gray-500 font-medium mb-1.5">Salario Base Quincenal (15 días - MXN)</label>
                                 <div className="relative">
                                     <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">$</span>
                                     <input
@@ -327,6 +339,11 @@ export function AdminPuestos() {
                                         className="w-full pl-7 pr-4 py-2 bg-black/20 border border-white/5 rounded-xl text-white focus:outline-none focus:border-cyan-400 focus:bg-white/10 shadow-inner transition"
                                     />
                                 </div>
+                                {formData.salario_base !== '' && Number(formData.salario_base) > 0 && (
+                                    <p className="mt-1.5 text-xs text-cyan-300/80">
+                                        Salario diario equivalente: <strong>{formatCurrency(Number(formData.salario_base) / 15)}</strong> por día
+                                    </p>
+                                )}
                             </div>
 
                             {puestoEditando && (

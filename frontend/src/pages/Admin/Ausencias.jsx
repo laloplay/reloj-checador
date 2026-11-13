@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Plus, Edit, CheckCircle2, X, CalendarDays, UserRound } from 'lucide-react';
 import api from '../../services/api';
+import { useAlert } from '../../context/AlertContext';
 
 const TIPOS = [
   { value: 'vacaciones', label: 'Vacaciones' },
@@ -15,6 +16,7 @@ const formatDate = (date) => new Date(date).toLocaleDateString('es-MX', {
 });
 
 export function AdminAusencias() {
+  const { mostrarAlerta, confirmar } = useAlert();
   const [empleados, setEmpleados] = useState([]);
   const [ausencias, setAusencias] = useState([]);
   const [empleadoFiltro, setEmpleadoFiltro] = useState('');
@@ -101,7 +103,7 @@ export function AdminAusencias() {
     e.preventDefault();
 
     if (!formData.empleado_id || !formData.fecha_inicio || !formData.fecha_fin) {
-      alert('Completa empleado, fecha de inicio y fecha de fin.');
+      mostrarAlerta('Completa empleado, fecha de inicio y fecha de fin.', 'warning');
       return;
     }
 
@@ -109,14 +111,16 @@ export function AdminAusencias() {
       setGuardando(true);
       if (ausenciaEditando) {
         await api.put(`/ausencias/${ausenciaEditando.id}`, formData);
+        mostrarAlerta('Ausencia actualizada correctamente', 'success');
       } else {
         await api.post('/ausencias', formData);
+        mostrarAlerta('Ausencia registrada correctamente', 'success');
       }
       await cargarAusencias();
       setModalAbierto(false);
     } catch (error) {
       console.error('Error al guardar ausencia:', error);
-      alert('Error al guardar la ausencia');
+      mostrarAlerta('Error al guardar la ausencia', 'error');
     } finally {
       setGuardando(false);
     }
@@ -128,19 +132,26 @@ export function AdminAusencias() {
       await cargarAusencias();
     } catch (error) {
       console.error('Error al aprobar ausencia:', error);
-      alert('Error al cambiar el estado de aprobación');
+      mostrarAlerta('Error al cambiar el estado de aprobación', 'error');
     }
   };
 
   const eliminarAusencia = async (id) => {
-    if (!window.confirm('¿Eliminar esta ausencia?')) return;
+    const confirmado = await confirmar({
+      titulo: 'Eliminar ausencia',
+      mensaje: '¿Seguro que deseas eliminar este registro de ausencia?',
+      textoConfirmar: 'Sí, eliminar',
+      variante: 'danger',
+    });
+    if (!confirmado) return;
 
     try {
       await api.delete(`/ausencias/${id}`);
+      mostrarAlerta('Ausencia eliminada correctamente', 'success');
       await cargarAusencias();
     } catch (error) {
       console.error('Error al eliminar ausencia:', error);
-      alert('Error al eliminar la ausencia');
+      mostrarAlerta('Error al eliminar la ausencia', 'error');
     }
   };
 
@@ -164,10 +175,6 @@ export function AdminAusencias() {
       <div className="relative mx-auto flex max-w-7xl flex-col gap-6 px-4 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
         <div className="mb-6 flex flex-col gap-4 sm:mb-8 sm:flex-row sm:items-end sm:justify-between">
             <div>
-                <div className="inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-500/10 px-3 py-1 text-[10px] font-medium uppercase tracking-[0.28em] text-cyan-100">
-                    <UserRound size={12} />
-                    Gestión de personal
-                </div>
                 <h1 className="mt-3 text-3xl font-medium tracking-tight text-white sm:text-4xl">Ausencias</h1>
             </div>
             <button
@@ -286,7 +293,6 @@ export function AdminAusencias() {
           <div className="rounded-3xl border border-white/10 bg-white/5 p-5 shadow-[0_18px_60px_rgba(0,0,0,0.2)] backdrop-blur-xl sm:p-6 mb-6 max-w-lg w-full">
             <div className="flex items-center justify-between border-b border-white/10 px-5 pb-4 pt-5 sm:px-7 sm:pb-5 sm:pt-6">
             <div>
-                <p className="text-[11px] uppercase tracking-widest text-gray-500 font-medium mb-0.5">Gestión de personal</p>
                 <h2 className="text-lg font-light text-gray-100 tracking-wide m-0">
                     {ausenciaEditando ? 'Editar ausencia' : 'Nueva ausencia'}
                 </h2>

@@ -2,9 +2,11 @@ import { useContext, useEffect, useState } from 'react';
 import { Plus, Edit, Trash2, X, Users } from 'lucide-react';
 import api from '../../services/api';
 import { AuthContext } from '../../context/AuthContext';
+import { useAlert } from '../../context/AlertContext';
 
 export function AdminUsuarios() {
   const { admin } = useContext(AuthContext);
+  const { mostrarAlerta, confirmar } = useAlert();
   const [usuarios, setUsuarios] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [modalAbierto, setModalAbierto] = useState(false);
@@ -122,20 +124,27 @@ export function AdminUsuarios() {
 
   const eliminarUsuario = async (usuario) => {
     if (String(usuario.id) === String(admin?.id)) {
-      alert('No puedes eliminar tu propio usuario.');
+      mostrarAlerta('No puedes eliminar tu propio usuario.', 'warning');
       return;
     }
 
-    if (!window.confirm(`¿Estás seguro de que deseas eliminar al usuario "${usuario.username}"?`)) {
+    const confirmado = await confirmar({
+      titulo: 'Eliminar usuario',
+      mensaje: `¿Estás seguro de que deseas eliminar al usuario "${usuario.username}"?`,
+      textoConfirmar: 'Sí, eliminar',
+      variante: 'danger',
+    });
+    if (!confirmado) {
       return;
     }
 
     try {
       await api.delete(`/usuarios/${usuario.id}`);
+      mostrarAlerta('Usuario eliminado correctamente.', 'success');
       await cargarUsuarios();
     } catch (error) {
       console.error('Error al eliminar usuario:', error);
-      alert(error.response?.data?.message || 'Error al eliminar el usuario');
+      mostrarAlerta(error.response?.data?.message || 'Error al eliminar el usuario', 'error');
     }
   };
 
@@ -175,10 +184,6 @@ export function AdminUsuarios() {
       <div className="relative mx-auto flex max-w-7xl flex-col gap-6 px-4 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
         <div className="mb-6 flex flex-col gap-4 sm:mb-8 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-500/10 px-3 py-1 text-[10px] font-medium uppercase tracking-[0.28em] text-cyan-100">
-              <Users size={12} />
-              Administración del sistema
-            </div>
             <h1 className="mt-3 text-3xl font-medium tracking-tight text-white sm:text-4xl">
               Usuarios
             </h1>
@@ -295,9 +300,6 @@ export function AdminUsuarios() {
             <div className="flex max-h-[calc(100dvh-1.5rem)] w-full max-w-md flex-col overflow-hidden rounded-[1.75rem] border border-white/10 bg-white/2 shadow-[0_24px_80px_rgba(0,0,0,0.5)] backdrop-blur-3xl">
               <div className="flex items-center justify-between border-b border-white/10 px-5 pb-4 pt-5 sm:px-7 sm:pb-5 sm:pt-6">
                 <div>
-                  <p className="mb-0.5 text-[11px] font-medium uppercase tracking-widest text-gray-500">
-                    Administración del sistema
-                  </p>
                   <h2 className="m-0 text-lg font-light tracking-wide text-gray-100">
                     {usuarioEditando ? 'Editar usuario' : 'Nuevo usuario'}
                   </h2>

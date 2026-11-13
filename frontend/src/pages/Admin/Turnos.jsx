@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Plus, Edit, Trash2, X, Power, Clock } from 'lucide-react';
 import api from '../../services/api';
+import { useAlert } from '../../context/AlertContext';
 
 export function AdminTurnos() {
+  const { mostrarAlerta, confirmar } = useAlert();
   const [turnos, setTurnos] = useState([]);
   const [sucursales, setSucursales] = useState([]);
   const [cargando, setCargando] = useState(true);
@@ -72,7 +74,7 @@ export function AdminTurnos() {
     e.preventDefault();
 
     if (!formData.nombre || !formData.hora_inicio || !formData.hora_fin || formData.minutos_bono === '') {
-      alert('Por favor completa todos los campos');
+      mostrarAlerta('Por favor completa todos los campos', 'warning');
       return;
     }
 
@@ -81,29 +83,38 @@ export function AdminTurnos() {
 
       if (turnoEditando) {
         await api.put(`/turnos/${turnoEditando.id}`, formData);
+        mostrarAlerta('Turno actualizado correctamente', 'success');
       } else {
         await api.post('/turnos', formData);
+        mostrarAlerta('Turno creado correctamente', 'success');
       }
 
       await cargarDatos();
       setModalAbierto(false);
     } catch (error) {
       console.error('Error al guardar turno:', error);
-      alert('Error al guardar el turno');
+      mostrarAlerta('Error al guardar el turno', 'error');
     } finally {
       setGuardando(false);
     }
   };
 
   const eliminarTurno = async (id) => {
-    if (!window.confirm('¿Estás seguro de que quieres eliminar este turno?')) return;
+    const confirmado = await confirmar({
+      titulo: 'Desactivar turno',
+      mensaje: '¿Estás seguro de que quieres eliminar este turno?',
+      textoConfirmar: 'Sí, eliminar',
+      variante: 'danger',
+    });
+    if (!confirmado) return;
 
     try {
       await api.delete(`/turnos/${id}`);
+      mostrarAlerta('Turno eliminado correctamente', 'success');
       await cargarDatos();
     } catch (error) {
       console.error('Error al eliminar turno:', error);
-      alert('Error al eliminar el turno');
+      mostrarAlerta('Error al eliminar el turno', 'error');
     }
   };
 
@@ -120,10 +131,11 @@ export function AdminTurnos() {
       const hora_fin = `${String(finHora).padStart(2, '0')}:${String(finMinutos).padStart(2, '0')}`;
 
       await api.put(`/turnos/${id}`, { ...turno, hora_fin, activo: true });
+      mostrarAlerta('Turno reactivado correctamente', 'success');
       await cargarDatos();
     } catch (error) {
       console.error('Error al reactivar turno:', error);
-      alert('Error al reactivar el turno');
+      mostrarAlerta('Error al reactivar el turno', 'error');
     }
   };
 
@@ -149,10 +161,6 @@ export function AdminTurnos() {
       <div className="relative mx-auto flex max-w-7xl flex-col gap-6 px-4 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
         <div className="mb-6 flex flex-col gap-4 sm:mb-8 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-500/10 px-3 py-1 text-[10px] font-medium uppercase tracking-[0.28em] text-cyan-100">
-                <Clock size={12} />
-                Gestión de personal
-            </div>
             <h1 className="mt-3 text-3xl font-medium tracking-tight text-white sm:text-4xl">Turnos</h1>
           </div>
           <button
@@ -368,7 +376,6 @@ export function AdminTurnos() {
           <div className="max-h-[calc(100dvh-1.5rem)] w-full max-w-md overflow-hidden rounded-[1.75rem] border border-white/10 bg-white/2 shadow-[0_24px_80px_rgba(0,0,0,0.5)] backdrop-blur-3xl flex flex-col">
             <div className="flex items-center justify-between border-b border-white/10 px-5 pb-4 pt-5 sm:px-7 sm:pb-5 sm:pt-6">
                             <div>
-                                <p className="text-[11px] uppercase tracking-widest text-gray-500 font-medium mb-0.5">Gestión de personal</p>
                                 <h2 className="text-lg font-light text-gray-100 tracking-wide m-0">
                 {turnoEditando ? 'Editar turno' : 'Nuevo turno'}
               </h2>

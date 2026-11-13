@@ -44,9 +44,6 @@ const ConfirmacionRegistroFacialModal = ({ isOpen, onClose, empleado, onConfirm,
         {/* Header */}
         <div className="flex items-center justify-between px-7 pt-6 pb-5 border-b border-blue-400/10">
           <div>
-            <p className="text-[11px] uppercase tracking-widest text-gray-500 font-medium mb-0.5">
-              Confirmar registro facial
-            </p>
             <h2 className="text-lg font-light text-gray-100 tracking-wide m-0">
               {empleado.nombre_completo}
             </h2>
@@ -328,32 +325,73 @@ export function CheckIn() {
 
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
+  const streamRef = useRef(null);
+  const mountedRef = useRef(true);
+
+  const detenerCamara = useCallback(() => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+    }
+    if (videoRef.current?.srcObject) {
+      const currentStream = videoRef.current.srcObject;
+      if (currentStream && typeof currentStream.getTracks === 'function') {
+        currentStream.getTracks().forEach((track) => track.stop());
+      }
+      videoRef.current.srcObject = null;
+    }
+    setStreamActivo(false);
+  }, []);
 
   const iniciarCamara = useCallback(async () => {
-    if (cameraError) setCameraError(false);
+    setCameraError(false);
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: {width:{ ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' } });
+      // Detener cualquier stream previo antes de solicitar uno nuevo
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((track) => track.stop());
+        streamRef.current = null;
+      }
+
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' },
+      });
+
+      // Si el componente se desmontó mientras se resolvía el permiso/cámara, apagar de inmediato
+      if (!mountedRef.current) {
+        stream.getTracks().forEach((track) => track.stop());
+        return;
+      }
+
+      streamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
-        setStreamActivo(true);
       }
+      setStreamActivo(true);
     } catch (error) {
       console.error('Error al acceder a la cámara:', error);
-      setStreamActivo(false);
-      setCameraError(true);
+      if (mountedRef.current) {
+        setStreamActivo(false);
+        setCameraError(true);
+      }
     }
-  }, [cameraError]);
+  }, []);
 
   useEffect(() => {
+    mountedRef.current = true;
+
     const cargarPendientes = async () => {
       try {
         setCargandoPendientes(true);
         const { data } = await api.get('/empleados/pendientes-facial');
-        setPendientesFacial(Array.isArray(data) ? data : []);
+        if (mountedRef.current) {
+          setPendientesFacial(Array.isArray(data) ? data : []);
+        }
       } catch (error) {
         console.error('Error al cargar pendientes faciales:', error);
       } finally {
-        setCargandoPendientes(false);
+        if (mountedRef.current) {
+          setCargandoPendientes(false);
+        }
       }
     };
     cargarPendientes();
@@ -361,12 +399,12 @@ export function CheckIn() {
     if (permission === 'granted') {
       iniciarCamara();
     }
+
     return () => {
-      if (videoRef.current?.srcObject) {
-        videoRef.current.srcObject.getTracks().forEach((track) => track.stop());
-      }
+      mountedRef.current = false;
+      detenerCamara();
     };
-  }, [permission, iniciarCamara]);
+  }, [permission, iniciarCamara, detenerCamara]);
 
   const mostrarResultado = (exito, mensaje, extras = {}) => {
     setResultado({ exito, mensaje, ...extras });
@@ -554,11 +592,7 @@ export function CheckIn() {
           <section className="flex h-full min-h-0 flex-1 flex-col overflow-hidden rounded-3xl border border-white/10 bg-white/5 shadow-[0_28px_80px_rgba(0,0,0,0.28)] backdrop-blur-2xl sm:rounded-[1.75rem]">
             <div className="shrink-0 border-b border-white/5 p-4 sm:p-5 lg:p-6">
               <div>
-                <div className="inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-500/10 px-3 py-1 text-[10px] uppercase tracking-[0.35em] text-cyan-100">
-                  <Clock3 size={12} />
-                  Registro de hoy
-                </div>
-                <div className="mt-3 text-4xl font-medium tabular-nums tracking-tight text-white sm:text-5xl lg:text-6xl">
+                <div className="text-4xl font-medium tabular-nums tracking-tight text-white sm:text-5xl lg:text-6xl">
                   {hora}
                 </div>
                 <div className="mt-2 text-sm text-slate-400 sm:text-base lg:text-lg">{fecha}</div>
@@ -651,6 +685,7 @@ export function CheckIn() {
                     </div>
                     <Link
                       to="/portal"
+                      onClick={detenerCamara}
                       className="w-full text-center rounded-xl border border-slate-700 bg-slate-800/80 px-3 py-2.5 text-xs font-medium text-slate-300 transition hover:border-slate-600 hover:bg-slate-700 active:scale-[0.98] sm:hidden"
                     >
                       Consultar mis registros
@@ -681,6 +716,7 @@ export function CheckIn() {
       />
       <Link
         to="/portal"
+        onClick={detenerCamara}
         className="hidden sm:block fixed bottom-4 right-4 z-20 rounded-2xl border border-white/20 bg-white/10 px-4 py-3 text-sm font-medium text-white shadow-lg backdrop-blur-sm transition hover:bg-white/20 active:scale-95 sm:bottom-5 sm:right-5 lg:bottom-6 lg:right-6"
       >
         Consultar mis registros
@@ -688,6 +724,7 @@ export function CheckIn() {
       {tipo === 'administracion' && (
         <Link
           to="/admin/login"
+          onClick={detenerCamara}
           className="fixed bottom-4 left-4 z-20 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/40 backdrop-blur-sm transition hover:bg-white/10 hover:text-white/70 active:scale-95"
         >
           Admin

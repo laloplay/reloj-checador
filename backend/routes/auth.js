@@ -7,7 +7,8 @@ const router = express.Router();
 
 router.post('/login', async (req, res) => {
   const { username, password } = req.body;
-  if (!username || !password) {
+  const cleanUsername = typeof username === 'string' ? username.trim() : '';
+  if (!cleanUsername || !password) {
     return res.status(400).json({ message: 'username and password are required' });
   }
 
@@ -19,8 +20,8 @@ router.post('/login', async (req, res) => {
     `).catch(() => {});
 
     const { rows } = await pool.query(
-      'SELECT id, username, password_hash, COALESCE(activo, TRUE) AS activo FROM admins WHERE LOWER(username) = LOWER($1)',
-      [username]
+      'SELECT id, username, password_hash, COALESCE(activo, TRUE) AS activo FROM admins WHERE LOWER(TRIM(username)) = LOWER($1)',
+      [cleanUsername]
     );
     if (rows.length === 0) {
       return res.status(401).json({ message: 'Credenciales inválidas' });

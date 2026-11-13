@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Plus, Edit, UserX, X, Camera, Volume2, Users, Search, Building } from 'lucide-react';
 import api from '../../services/api';
+import { useAlert } from '../../context/AlertContext';
 
 const DAYS_OF_WEEK = [
     { value: 0, label: 'Domingo' },
@@ -26,6 +27,7 @@ const normalizeDiasDescanso = (value) => {
 };
 
 export function AdminEmpleados() {
+    const { mostrarAlerta, confirmar } = useAlert();
     const [empleados, setEmpleados] = useState([]);
     const [turnos, setTurnos] = useState([]);
     const [sucursales, setSucursales] = useState([]);
@@ -118,7 +120,7 @@ export function AdminEmpleados() {
         e.preventDefault();
 
         if (!formData.nombre_completo) {
-            alert('Por favor, completa el nombre completo del empleado.');
+            mostrarAlerta('Por favor, completa el nombre completo del empleado.', 'warning');
             return;
         }
 
@@ -140,43 +142,57 @@ export function AdminEmpleados() {
                 });
             }
 
+            mostrarAlerta(
+                empleadoEditando ? 'Empleado actualizado correctamente' : 'Empleado registrado correctamente',
+                'success'
+            );
             await cargarDatos();
             cerrarModal();
         } catch (error) {
             console.error('Error al guardar empleado:', error);
-            alert('Error al guardar el empleado');
+            mostrarAlerta('Error al guardar el empleado', 'error');
         } finally {
             setGuardando(false);
         }
     };
 
     const eliminarEmpleado = async (id) => {
-        if (!window.confirm('¿Estás seguro de que quieres desactivar este empleado? Ya no podrá realizar checadas.')) return;
+        const confirmado = await confirmar({
+            titulo: 'Desactivar empleado',
+            mensaje: '¿Estás seguro de que quieres desactivar este empleado? Ya no podrá realizar checadas.',
+            textoConfirmar: 'Sí, desactivar',
+            variante: 'danger',
+        });
+        if (!confirmado) return;
 
         try {
             await api.delete(`/empleados/${id}`);
+            mostrarAlerta('Empleado desactivado correctamente', 'success');
             await cargarDatos();
         } catch (error) {
             console.error('Error al eliminar empleado:', error);
-            alert('Error al eliminar el empleado');
+            mostrarAlerta('Error al eliminar el empleado', 'error');
         }
     };
 
     const regenerarAudio = async (id) => {
         try {
             await api.post(`/empleados/${id}/regenerar-audio`);
-            alert('Audio regenerado correctamente');
+            mostrarAlerta('Audio regenerado correctamente', 'success');
             await cargarDatos();
         } catch (error) {
             console.error('Error al regenerar el audio:', error);
             const backendMessage = error?.response?.data?.message;
 
             if (error?.response?.status === 503) {
-                alert(backendMessage || 'AWS Polly no tiene permisos. Agrega polly:SynthesizeSpeech al usuario/rol de IAM.');
+                mostrarAlerta(
+                    backendMessage || 'AWS Polly no tiene permisos. Agrega polly:SynthesizeSpeech al usuario/rol de IAM.',
+                    'error'
+                );
                 return;
             }
 
-            alert(backendMessage || 'Error al regenerar el audio');
+            mostrarAlerta(backendMessage || 'Error al regenerar el audio', 'error');
         }
     };
 
@@ -197,7 +213,7 @@ export function AdminEmpleados() {
             }, 100);
         } catch (error) {
             console.error('Error al acceder a la cámara:', error);
-            alert('No se pudo acceder a la cámara');
+            mostrarAlerta('No se pudo acceder a la cámara', 'error');
         }
     };
 

@@ -121,6 +121,66 @@ const escapeHtml = (value) =>
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
 
+const formatearHoraAmPm = (hora) => {
+  if (!hora) return '';
+  const partes = String(hora).trim().split(':');
+  if (partes.length < 2) return String(hora);
+  const h24 = parseInt(partes[0], 10);
+  const min = partes[1].slice(0, 2);
+  if (Number.isNaN(h24)) return String(hora);
+  const sufijo = h24 >= 12 ? 'p.m.' : 'a.m.';
+  const h12 = h24 % 12 || 12;
+  return `${String(h12).padStart(2, '0')}:${min} ${sufijo}`;
+};
+
+const formatearHorarioTurno = (horaInicio, horaFin) =>
+  horaInicio && horaFin
+    ? `${formatearHoraAmPm(horaInicio)} – ${formatearHoraAmPm(horaFin)}`
+    : 'Sin turno asignado';
+
+const evaluarBonoPeriodo = (item) => {
+  const emp = item?.empleado || {};
+  const est = item?.estadisticas || {};
+  const dias = item?.dias || [];
+
+  const participaBono =
+    emp.aplica_bono !== false &&
+    emp.turno_bono_activo !== false &&
+    est.participa_bono !== false;
+
+  if (!participaBono) {
+    return false;
+  }
+
+  if (typeof est.bono_valido === 'boolean') {
+    return est.bono_valido;
+  }
+
+  const diasEvaluables = dias.filter((dia) => {
+    if (dia.es_futuro) return false;
+    const esSoloNoLaborable =
+      (dia.condiciones || []).every((c) =>
+        ['descanso', 'festivo', 'cumpleanos', 'previo_ingreso'].includes(c.tipo)
+      ) && !dia.hora_entrada;
+    return !esSoloNoLaborable;
+  });
+
+  if (diasEvaluables.length === 0) {
+    return false;
+  }
+
+  // Si el colaborador falla una sola vez en el período (llega sin bono ej. 6:51, o tiene retardo, falta, permiso o vacaciones), el bono queda inválido
+  const falloAlgunDia = diasEvaluables.some(
+    (dia) =>
+      !dia.tiene_bono ||
+      (dia.condiciones || []).some((c) =>
+        ['retardo', 'falta', 'permiso', 'vacaciones'].includes(c.tipo)
+      )
+  );
+
+  return !falloAlgunDia;
+};
+
 function generarDocumentoReporte({
   empleados,
   fechaInicio,
@@ -133,7 +193,7 @@ function generarDocumentoReporte({
   let totalSalidasGlobal = 0;
   let totalRetardosGlobal = 0;
   let totalFaltasGlobal = 0;
-  let totalBonosGlobal = 0;
+  let totalBonosValidosGlobal = 0;
 
   empleados.forEach((item) => {
     const key = item.empleado.sucursal_id || 'sin-sucursal';
@@ -145,14 +205,13 @@ function generarDocumentoReporte({
     }
     gruposMap.get(key).empleados.push(item);
 
-    const dias = item.dias || [];
-    const bonosEmp = dias.filter((d) => d.tiene_bono).length;
+    const bonoValido = evaluarBonoPeriodo(item);
 
     totalEntradasGlobal += Number(item.estadisticas?.total_entradas || 0);
     totalSalidasGlobal += Number(item.estadisticas?.total_salidas || 0);
     totalRetardosGlobal += Number(item.estadisticas?.total_retardos || 0);
     totalFaltasGlobal += Number(item.estadisticas?.total_faltas || 0);
-    totalBonosGlobal += bonosEmp;
+    if (bonoValido) totalBonosValidosGlobal += 1;
   });
 
   const grupos = [...gruposMap.values()];
@@ -169,7 +228,7 @@ function generarDocumentoReporte({
           const est = item.estadisticas || {};
           const dias = item.dias || [];
 
-          const totalBonos = dias.filter((d) => d.tiene_bono).length;
+          const bonoValido = evaluarBonoPeriodo(item);
           const totalPuntuales = dias.filter((d) =>
             d.condiciones?.some((c) => c.tipo === 'puntual')
           ).length;
@@ -179,14 +238,9 @@ function generarDocumentoReporte({
             )
           ).length;
 
-          const formatHoraCorta = (hora) =>
-            hora ? String(hora).replace(/^(\d{2}:\d{2}):\d{2}$/, '$1') : '';
-
           const horario =
             emp.turno_hora_inicio && emp.turno_hora_fin
-              ? `${formatHoraCorta(emp.turno_hora_inicio)} – ${formatHoraCorta(
-                  emp.turno_hora_fin
-                )}`
+              ? formatearHorarioTurno(emp.turno_hora_inicio, emp.turno_hora_fin)
               : 'Sin turno';
 
           return `
@@ -220,9 +274,9 @@ function generarDocumentoReporte({
                 <span class="metric-pill pill-neutral">${totalDescansos}</span>
               </td>
               <td class="col-metric">
-                <span class="metric-pill ${
-                  totalBonos > 0 ? 'pill-soft-blue' : 'pill-neutral'
-                }">${totalBonos}</span>
+                <span class="metric-pill ${bonoValido ? 'pill-sage' : 'pill-rose'}">
+                  ${bonoValido ? 'Válido' : 'Inválido'}
+                </span>
               </td>
             </tr>
           `;
@@ -253,7 +307,7 @@ function generarDocumentoReporte({
                 <th class="col-metric">Retardos</th>
                 <th class="col-metric">Faltas</th>
                 <th class="col-metric">Desc. / Perm.</th>
-                <th class="col-metric">Bonos</th>
+                <th class="col-metric">Bono</th>
               </tr>
             </thead>
             <tbody>
@@ -544,7 +598,7 @@ function generarDocumentoReporte({
       padding-top: 12px;
       border-top: 1px solid #dce4ec;
       display: flex;
-      justify-content: space-between;
+      justify-content: center;
       align-items: flex-end;
       page-break-inside: avoid;
       font-size: 9.5px;
@@ -553,6 +607,7 @@ function generarDocumentoReporte({
     .signature-box {
       text-align: center;
       width: 200px;
+      margin: 0 auto;
     }
     .signature-line {
       border-bottom: 1px solid #64748b;
@@ -608,20 +663,575 @@ function generarDocumentoReporte({
         <span class="lbl">Faltas</span>
       </div>
       <div class="summary-item">
-        <span class="num num-blue">${totalBonosGlobal}</span>
-        <span class="lbl">Bonos</span>
+        <span class="num ${totalBonosValidosGlobal > 0 ? 'num-sage' : 'num-rose'}">${
+          empleados.length === 1
+            ? totalBonosValidosGlobal === 1
+              ? 'Válido'
+              : 'Inválido'
+            : `${totalBonosValidosGlobal} / ${empleados.length}`
+        }</span>
+        <span class="lbl">${empleados.length === 1 ? 'Bono' : 'Bonos Válidos'}</span>
       </div>
     </section>
 
     ${seccionesHtml}
 
     <footer class="doc-footer">
-      <div>
-        Sistema de Control de Asistencia <strong>UNIFAM</strong> · Reporte concentrado por período
+      <div class="signature-box">
+        <div class="signature-line"></div>
+        <strong>Revisó Recursos Humanos</strong>
+      </div>
+    </footer>
+  </div>
+</body>
+</html>`;
+}
+
+function generarDocumentoIndividual({ item, fechaInicio, fechaFin }) {
+  const emp = item.empleado || {};
+  const est = item.estadisticas || {};
+  const dias = item.dias || [];
+
+  const bonoValidoPeriodo = evaluarBonoPeriodo(item);
+  const totalPuntuales = dias.filter((d) =>
+    d.condiciones?.some((c) => c.tipo === 'puntual')
+  ).length;
+
+  const horario = formatearHorarioTurno(emp.turno_hora_inicio, emp.turno_hora_fin);
+
+  const fechaEmision = new Date().toLocaleString('es-MX', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  });
+
+  const getPillClassByTipo = (tipo) => {
+    switch (tipo) {
+      case 'puntual':
+        return 'pill-sage';
+      case 'retardo':
+      case 'permiso':
+        return 'pill-amber';
+      case 'falta':
+        return 'pill-rose';
+      case 'descanso':
+      case 'vacaciones':
+      case 'festivo':
+      case 'cumpleanos':
+        return 'pill-blue';
+      default:
+        return 'pill-neutral';
+    }
+  };
+
+  const filasDias = dias
+    .map((dia, idx) => {
+      const condiciones =
+        dia.condiciones && dia.condiciones.length > 0
+          ? dia.condiciones
+          : [{ tipo: 'futuro', label: 'Sin registro' }];
+
+      const esNoLaborableSinChecada =
+        dia.es_futuro ||
+        (condiciones.every((c) =>
+          ['descanso', 'festivo', 'cumpleanos', 'previo_ingreso'].includes(c.tipo)
+        ) &&
+          !dia.hora_entrada);
+
+      const badgesHtml = condiciones
+        .map(
+          (c) =>
+            `<span class="status-badge ${getPillClassByTipo(c.tipo)}">${escapeHtml(
+              c.label || c.tipo
+            )}</span>`
+        )
+        .join(' ');
+
+      const observaciones = condiciones
+        .map((c) => c.motivo)
+        .filter(Boolean)
+        .join(' · ');
+
+      let bonoDiaHtml;
+      if (esNoLaborableSinChecada) {
+        bonoDiaHtml = '<span class="metric-pill pill-neutral">—</span>';
+      } else if (dia.tiene_bono) {
+        bonoDiaHtml = '<span class="metric-pill pill-sage">Válido</span>';
+      } else {
+        bonoDiaHtml = '<span class="metric-pill pill-rose">Inválido</span>';
+      }
+
+      return `
+        <tr>
+          <td class="col-num">${idx + 1}</td>
+          <td class="col-fecha">${escapeHtml(formatearFecha(dia.fecha))}</td>
+          <td class="col-dia">${escapeHtml(dia.dia_semana || '')}</td>
+          <td>${badgesHtml}</td>
+          <td class="col-hora">${escapeHtml(formatearHoraAmPm(dia.hora_entrada) || '--:--')}</td>
+          <td class="col-hora">${escapeHtml(formatearHoraAmPm(dia.hora_salida) || '--:--')}</td>
+          <td class="col-metric">${bonoDiaHtml}</td>
+          <td class="col-obs">${
+            observaciones ? escapeHtml(observaciones) : '<span class="obs-empty">—</span>'
+          }</td>
+        </tr>
+      `;
+    })
+    .join('');
+
+  return `<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>&nbsp;</title>
+  <style>
+    @page {
+      size: letter portrait;
+      margin: 0;
+    }
+    * {
+      box-sizing: border-box;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    html, body {
+      width: 100%;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      padding: 6mm 6mm;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      color: #2c3e50;
+      background: #ffffff;
+      font-size: 11px;
+      line-height: 1.4;
+    }
+    .doc-container {
+      width: 100%;
+      max-width: 100%;
+    }
+
+    /* Encabezado Corporativo en tonos bajos y suaves */
+    .doc-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      background: #f4f7fa;
+      color: #2c3e50;
+      padding: 12px 16px;
+      border-radius: 10px;
+      border: 1px solid #dce4ec;
+      border-bottom: 2px solid #8fa4b8;
+      margin-bottom: 10px;
+    }
+    .brand-block {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .brand-logo {
+      height: 42px;
+      width: auto;
+      object-fit: contain;
+      display: block;
+    }
+    .brand-divider {
+      width: 1px;
+      height: 34px;
+      background: #cfd9e3;
+    }
+    .doc-title-block h1 {
+      margin: 0;
+      font-size: 15.5px;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      color: #2b3d4f;
+    }
+    .doc-title-block p {
+      margin: 2px 0 0;
+      font-size: 10.5px;
+      color: #64748b;
+    }
+    .doc-meta {
+      text-align: right;
+      font-size: 10px;
+      color: #526375;
+      line-height: 1.45;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .doc-meta strong {
+      color: #3b536b;
+      font-weight: 600;
+    }
+
+    /* Ficha de datos del colaborador */
+    .emp-profile-card {
+      display: grid;
+      grid-template-columns: 2fr 1.2fr 1.2fr 1.2fr;
+      gap: 10px;
+      background: #f8fafc;
+      border: 1px solid #dce4ec;
+      border-left: 3px solid #758da3;
+      border-radius: 8px;
+      padding: 9px 14px;
+      margin-bottom: 10px;
+    }
+    .profile-field .field-label {
+      display: block;
+      font-size: 8.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #64748b;
+    }
+    .profile-field .field-value {
+      display: block;
+      margin-top: 2px;
+      font-size: 11.5px;
+      font-weight: 600;
+      color: #1e293b;
+    }
+    .profile-field .field-mono {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 10.5px;
+    }
+
+    /* Barra de Resumen Ejecutivo */
+    .summary-bar {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .summary-item {
+      background: #f9fbfd;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 7px 10px;
+      text-align: center;
+    }
+    .summary-item .num {
+      display: block;
+      font-size: 15px;
+      font-weight: 700;
+      color: #334155;
+    }
+    .summary-item .lbl {
+      display: block;
+      margin-top: 1px;
+      font-size: 8.5px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #64748b;
+    }
+    .num-sage { color: #3d6b58 !important; }
+    .num-blue { color: #4a6984 !important; }
+    .num-amber { color: #8c6239 !important; }
+    .num-rose { color: #8c4650 !important; }
+
+    /* Tabla de bitácora diaria */
+    .branch-section {
+      margin-bottom: 14px;
+    }
+    .branch-banner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      background: #eef3f7;
+      border: 1px solid #dce4ec;
+      border-left: 3px solid #758da3;
+      padding: 6px 12px;
+      border-radius: 6px 6px 0 0;
+    }
+    .branch-title-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .branch-tag {
+      font-size: 8.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      background: #dce6f0;
+      color: #41586e;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+    .branch-banner h2 {
+      margin: 0;
+      font-size: 11.5px;
+      font-weight: 700;
+      color: #2b3d4f;
+    }
+    .branch-count {
+      font-size: 9.5px;
+      font-weight: 600;
+      color: #5c7085;
+    }
+
+    .summary-table {
+      width: 100%;
+      border-collapse: collapse;
+      border: 1px solid #dce4ec;
+      border-top: none;
+      font-size: 10px;
+      background: #ffffff;
+    }
+    .summary-table th {
+      background: #f6f8fb;
+      color: #475569;
+      font-weight: 700;
+      text-transform: uppercase;
+      font-size: 8.5px;
+      letter-spacing: 0.05em;
+      padding: 6px 9px;
+      border-bottom: 1px solid #dce4ec;
+      text-align: left;
+      white-space: nowrap;
+    }
+    .summary-table td {
+      padding: 6px 9px;
+      border-bottom: 1px solid #edf2f7;
+      color: #334155;
+      vertical-align: middle;
+    }
+    .summary-table tbody tr:nth-child(even) td {
+      background: #fafcfe;
+    }
+    .summary-table tbody tr:last-child td {
+      border-bottom: none;
+    }
+    .col-num {
+      width: 28px;
+      text-align: center !important;
+      color: #94a3b8 !important;
+      font-weight: 600;
+    }
+    .col-fecha {
+      width: 86px;
+      white-space: nowrap;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-weight: 600;
+      color: #334155;
+    }
+    .col-dia {
+      width: 88px;
+      white-space: nowrap;
+      color: #475569;
+      text-transform: capitalize;
+    }
+    .col-hora {
+      width: 78px;
+      text-align: center !important;
+      white-space: nowrap;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 10px;
+      color: #334155;
+    }
+    .col-metric {
+      width: 66px;
+      text-align: center !important;
+      white-space: nowrap;
+    }
+    .col-obs {
+      color: #64748b;
+      font-size: 9.5px;
+    }
+    .obs-empty {
+      color: #cbd5e1;
+    }
+
+    /* Pastillas de estatus y métricas en tonos pastel bajos */
+    .status-badge {
+      display: inline-block;
+      padding: 2px 7px;
+      border-radius: 5px;
+      font-size: 9.5px;
+      font-weight: 600;
+      margin-right: 4px;
+    }
+    .metric-pill {
+      display: inline-block;
+      min-width: 28px;
+      padding: 1.5px 7px;
+      border-radius: 5px;
+      font-size: 9.5px;
+      font-weight: 600;
+      text-align: center;
+    }
+    .pill-neutral {
+      background: #f3f6f9;
+      color: #526375;
+      border: 1px solid #e2e8f0;
+    }
+    .pill-sage {
+      background: #eff6f2;
+      color: #386652;
+      border: 1px solid #d5e6dd;
+    }
+    .pill-blue {
+      background: #eff4f9;
+      color: #426280;
+      border: 1px solid #d6e2ee;
+    }
+    .pill-soft-blue {
+      background: #edf3f8;
+      color: #3b5975;
+      border: 1px solid #cbdceb;
+    }
+    .pill-amber {
+      background: #fbf6ee;
+      color: #855d33;
+      border: 1px solid #ebd9be;
+    }
+    .pill-rose {
+      background: #faeff0;
+      color: #8a434d;
+      border: 1px solid #ebcfd3;
+    }
+
+    /* Pie de firmas */
+    .doc-footer {
+      margin-top: 24px;
+      padding-top: 12px;
+      border-top: 1px solid #dce4ec;
+      display: flex;
+      justify-content: space-around;
+      align-items: flex-end;
+      page-break-inside: avoid;
+      font-size: 9.5px;
+      color: #64748b;
+    }
+    .signature-box {
+      text-align: center;
+      width: 210px;
+    }
+    .signature-line {
+      border-bottom: 1px solid #64748b;
+      height: 26px;
+      margin-bottom: 5px;
+    }
+    .signature-sub {
+      display: block;
+      margin-top: 2px;
+      font-size: 8.5px;
+      color: #94a3b8;
+    }
+  </style>
+</head>
+<body>
+  <div class="doc-container">
+    <header class="doc-header">
+      <div class="brand-block">
+        <img src="${LOGO_URL}" alt="UNIFAM" class="brand-logo" crossorigin="anonymous" />
+        <div class="brand-divider"></div>
+        <div class="doc-title-block">
+          <h1>Reporte Individual de Asistencia</h1>
+          <p>Desglose diario de asistencias e incidencias del colaborador</p>
+        </div>
+      </div>
+      <div class="doc-meta">
+        <div><strong>Período:</strong> ${escapeHtml(formatearFecha(fechaInicio))} al ${escapeHtml(
+          formatearFecha(fechaFin)
+        )}</div>
+        <div><strong>Sucursal:</strong> ${escapeHtml(emp.sucursal_nombre || 'Sin sucursal')}</div>
+        <div><strong>Emisión:</strong> ${escapeHtml(fechaEmision)}</div>
+      </div>
+    </header>
+
+    <section class="emp-profile-card">
+      <div class="profile-field">
+        <span class="field-label">Colaborador</span>
+        <span class="field-value">${escapeHtml(emp.nombre_completo || 'Sin nombre')}</span>
+      </div>
+      <div class="profile-field">
+        <span class="field-label">Puesto</span>
+        <span class="field-value">${escapeHtml(emp.puesto_nombre || 'Sin puesto')}</span>
+      </div>
+      <div class="profile-field">
+        <span class="field-label">Sucursal</span>
+        <span class="field-value">${escapeHtml(emp.sucursal_nombre || 'Sin sucursal')}</span>
+      </div>
+      <div class="profile-field">
+        <span class="field-label">Horario asignado</span>
+        <span class="field-value field-mono">${escapeHtml(horario)}</span>
+      </div>
+    </section>
+
+    <section class="summary-bar">
+      <div class="summary-item">
+        <span class="num num-sage">${est.total_entradas ?? 0}</span>
+        <span class="lbl">Entradas</span>
+      </div>
+      <div class="summary-item">
+        <span class="num num-blue">${est.total_salidas ?? 0}</span>
+        <span class="lbl">Salidas</span>
+      </div>
+      <div class="summary-item">
+        <span class="num">${totalPuntuales}</span>
+        <span class="lbl">Puntuales</span>
+      </div>
+      <div class="summary-item">
+        <span class="num num-amber">${est.total_retardos ?? 0}</span>
+        <span class="lbl">Retardos</span>
+      </div>
+      <div class="summary-item">
+        <span class="num num-rose">${est.total_faltas ?? 0}</span>
+        <span class="lbl">Faltas</span>
+      </div>
+      <div class="summary-item">
+        <span class="num ${bonoValidoPeriodo ? 'num-sage' : 'num-rose'}">${
+          bonoValidoPeriodo ? 'Válido' : 'Inválido'
+        }</span>
+        <span class="lbl">Bono</span>
+      </div>
+    </section>
+
+    <div class="branch-section">
+      <div class="branch-banner">
+        <div class="branch-title-wrap">
+          <span class="branch-tag">Detalle</span>
+          <h2>Bitácora diaria de asistencia</h2>
+        </div>
+        <span class="branch-count">${dias.length} ${
+          dias.length === 1 ? 'día registrado' : 'días registrados'
+        }</span>
+      </div>
+
+      <table class="summary-table">
+        <thead>
+          <tr>
+            <th class="col-num">#</th>
+            <th class="col-fecha">Fecha</th>
+            <th class="col-dia">Día</th>
+            <th>Estatus / Incidencia</th>
+            <th class="col-hora">Entrada</th>
+            <th class="col-hora">Salida</th>
+            <th class="col-metric">Bono</th>
+            <th>Observaciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${filasDias}
+        </tbody>
+      </table>
+    </div>
+
+    <footer class="doc-footer">
+      <div class="signature-box">
+        <div class="signature-line"></div>
+        <strong>Firma del Colaborador</strong>
+        <span class="signature-sub">${escapeHtml(emp.nombre_completo || '')}</span>
       </div>
       <div class="signature-box">
         <div class="signature-line"></div>
-        <strong>Revisó / Recursos Humanos</strong>
+        <strong>Revisó Recursos Humanos</strong>
+        <span class="signature-sub">Control de Asistencia</span>
       </div>
     </footer>
   </div>
@@ -670,17 +1280,26 @@ function DiaRow({ dia }) {
 
       <div className="flex shrink-0 items-center justify-end gap-3 border-t border-white/5 pt-2 text-xs text-slate-300 sm:border-t-0 sm:pt-0">
         <span className="rounded-lg border border-white/10 bg-white/5 px-2.5 py-1 font-mono text-xs text-slate-200">
-          {dia.hora_entrada || '--:--'} → {dia.hora_salida || '--:--'}
+          {formatearHoraAmPm(dia.hora_entrada) || '--:--'} → {formatearHoraAmPm(dia.hora_salida) || '--:--'}
         </span>
-        {dia.tiene_bono && (
-          <span
-            title="Bono de puntualidad"
-            className="inline-flex items-center gap-1 rounded-lg border border-amber-400/20 bg-amber-500/10 px-2 py-1 text-[11px] font-medium text-amber-300"
-          >
-            <Gift size={13} />
-            Bono
-          </span>
-        )}
+        {!dia.es_futuro &&
+          !(
+            (dia.condiciones || []).every((c) =>
+              ['descanso', 'festivo', 'cumpleanos', 'previo_ingreso'].includes(c.tipo)
+            ) && !dia.hora_entrada
+          ) && (
+            <span
+              title="Estado del bono de puntualidad del día"
+              className={`inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-[11px] font-medium ${
+                dia.tiene_bono
+                  ? 'border-emerald-400/20 bg-emerald-500/10 text-emerald-300'
+                  : 'border-rose-400/20 bg-rose-500/10 text-rose-300'
+              }`}
+            >
+              <Gift size={13} />
+              {dia.tiene_bono ? 'Bono válido' : 'Bono inválido'}
+            </span>
+          )}
       </div>
     </div>
   );
@@ -780,26 +1399,7 @@ export function AdminRegistros() {
     }
   };
 
-  const imprimirReporteGeneral = () => {
-    if (empleadosFiltrados.length === 0) return;
-
-    setGenerandoReporte(true);
-
-    const sucursalNombre = !sucursalFiltro
-      ? 'Todas las sucursales'
-      : sucursalFiltro === 'sin_asignar'
-        ? 'Sin sucursal asignada'
-        : sucursales.find((s) => String(s.id) === String(sucursalFiltro))?.nombre ||
-          'Sucursal seleccionada';
-
-    const html = generarDocumentoReporte({
-      empleados: empleadosFiltrados,
-      fechaInicio,
-      fechaFin,
-      sucursalNombre,
-      busquedaNombre: busquedaNombre.trim(),
-    });
-
+  const lanzarImpresionIframe = (html) => {
     const iframe = document.createElement('iframe');
     iframe.style.position = 'fixed';
     iframe.style.right = '0';
@@ -838,6 +1438,43 @@ export function AdminRegistros() {
     } else {
       setTimeout(ejecutarImpresion, 200);
     }
+  };
+
+  const imprimirReporteGeneral = () => {
+    if (empleadosFiltrados.length === 0) return;
+
+    setGenerandoReporte(true);
+
+    const sucursalNombre = !sucursalFiltro
+      ? 'Todas las sucursales'
+      : sucursalFiltro === 'sin_asignar'
+        ? 'Sin sucursal asignada'
+        : sucursales.find((s) => String(s.id) === String(sucursalFiltro))?.nombre ||
+          'Sucursal seleccionada';
+
+    const html = generarDocumentoReporte({
+      empleados: empleadosFiltrados,
+      fechaInicio,
+      fechaFin,
+      sucursalNombre,
+      busquedaNombre: busquedaNombre.trim(),
+    });
+
+    lanzarImpresionIframe(html);
+  };
+
+  const imprimirReporteIndividual = (item) => {
+    if (!item) return;
+
+    setGenerandoReporte(true);
+
+    const html = generarDocumentoIndividual({
+      item,
+      fechaInicio,
+      fechaFin,
+    });
+
+    lanzarImpresionIframe(html);
   };
 
   return (
@@ -1049,8 +1686,10 @@ export function AdminRegistros() {
                         </h2>
                         <p className="mt-0.5 text-xs text-slate-400">
                           {empleado.puesto_nombre || 'Sin puesto'} ·{' '}
-                          {empleado.turno_hora_inicio || '--:--'} -{' '}
-                          {empleado.turno_hora_fin || '--:--'}
+                          {formatearHorarioTurno(
+                            empleado.turno_hora_inicio,
+                            empleado.turno_hora_fin
+                          )}
                         </p>
                       </div>
                       <span className="shrink-0 rounded-full border border-cyan-400/20 bg-cyan-500/10 px-2.5 py-1 text-[11px] font-medium text-cyan-200">
@@ -1088,7 +1727,9 @@ export function AdminRegistros() {
                     <div className="mt-3 flex items-center justify-end gap-2">
                       <button
                         type="button"
-                        className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-slate-300 transition hover:bg-white/10 hover:text-white"
+                        onClick={() => imprimirReporteIndividual(item)}
+                        disabled={generandoReporte}
+                        className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-slate-300 transition hover:bg-white/10 hover:text-white disabled:opacity-50"
                         title="Imprimir reporte individual"
                       >
                         <Printer size={16} />
@@ -1158,8 +1799,10 @@ export function AdminRegistros() {
                               {empleado.puesto_nombre || 'Sin puesto'}
                             </div>
                             <div className="font-mono text-xs text-slate-500">
-                              {empleado.turno_hora_inicio || '--:--'} -{' '}
-                              {empleado.turno_hora_fin || '--:--'}
+                              {formatearHorarioTurno(
+                                empleado.turno_hora_inicio,
+                                empleado.turno_hora_fin
+                              )}
                             </div>
                           </td>
                           <td className="px-4 py-4 text-center">
@@ -1202,8 +1845,10 @@ export function AdminRegistros() {
                               </button>
                               <button
                                 type="button"
+                                onClick={() => imprimirReporteIndividual(item)}
+                                disabled={generandoReporte}
                                 title="Imprimir reporte individual"
-                                className="inline-flex items-center justify-center rounded-xl border border-white/10 bg-white/5 p-2 text-slate-300 transition hover:bg-white/10 hover:text-white"
+                                className="inline-flex items-center justify-center rounded-xl border border-white/10 bg-white/5 p-2 text-slate-300 transition hover:bg-white/10 hover:text-white disabled:opacity-50"
                               >
                                 <Printer size={15} />
                               </button>
@@ -1243,8 +1888,10 @@ export function AdminRegistros() {
                 <p className="mt-1 text-xs text-slate-400">
                   {empleadoModal.empleado.puesto_nombre || 'Sin puesto'} · Horario:{' '}
                   <span className="font-mono text-slate-300">
-                    {empleadoModal.empleado.turno_hora_inicio || '--:--'} -{' '}
-                    {empleadoModal.empleado.turno_hora_fin || '--:--'}
+                    {formatearHorarioTurno(
+                      empleadoModal.empleado.turno_hora_inicio,
+                      empleadoModal.empleado.turno_hora_fin
+                    )}
                   </span>
                 </p>
               </div>
@@ -1259,7 +1906,7 @@ export function AdminRegistros() {
 
             {/* Cuerpo del modal */}
             <div className="flex flex-col gap-4 overflow-y-auto px-5 py-5 sm:px-7">
-              <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+              <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-5">
                 <StatCard
                   label="Entradas"
                   value={empleadoModal.estadisticas?.total_entradas}
@@ -1280,6 +1927,15 @@ export function AdminRegistros() {
                   value={empleadoModal.estadisticas?.total_faltas}
                   color="text-rose-300"
                 />
+                <StatCard
+                  label="Bono"
+                  value={evaluarBonoPeriodo(empleadoModal).etiqueta}
+                  color={
+                    evaluarBonoPeriodo(empleadoModal).valido
+                      ? 'text-emerald-300'
+                      : 'text-rose-300'
+                  }
+                />
               </div>
 
               <div className="space-y-2">
@@ -1297,6 +1953,15 @@ export function AdminRegistros() {
                 className="w-full rounded-xl border border-white/10 bg-white/5 py-2.5 text-sm font-medium text-gray-300 transition hover:bg-white/10"
               >
                 Cerrar
+              </button>
+              <button
+                type="button"
+                onClick={() => imprimirReporteIndividual(empleadoModal)}
+                disabled={generandoReporte}
+                className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-cyan-600 py-2.5 text-sm font-medium text-white shadow-lg shadow-cyan-950/30 transition hover:bg-cyan-500 disabled:opacity-50"
+              >
+                <Printer size={16} />
+                <span>{generandoReporte ? 'Generando...' : 'Imprimir reporte'}</span>
               </button>
             </div>
           </div>

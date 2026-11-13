@@ -37,11 +37,7 @@ const CamaraStep = ({ onConsultar, procesando, error, streamActivo, cameraError,
   <section className="flex h-full min-h-0 flex-1 flex-col overflow-hidden rounded-3xl border border-white/10 bg-white/5 shadow-[0_28px_80px_rgba(0,0,0,0.28)] backdrop-blur-2xl sm:rounded-[1.75rem]">
     <div className="shrink-0 border-b border-white/5 p-4 sm:p-5 lg:p-6">
       <div>
-        <div className="inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-500/10 px-3 py-1 text-[10px] uppercase tracking-[0.35em] text-cyan-100">
-          <UserCheck size={12} />
-          Verificación Facial
-        </div>
-        <h1 className="mt-3 text-3xl font-medium tracking-tight text-white sm:text-4xl lg:text-5xl">Portal de Empleado</h1>
+        <h1 className="text-3xl font-medium tracking-tight text-white sm:text-4xl lg:text-5xl">Portal de Empleado</h1>
         <p className="mt-2 text-sm text-slate-400 sm:text-base lg:text-lg">Consulta tus asistencias y registros del mes.</p>
       </div>
     </div>
@@ -323,41 +319,63 @@ export function PortalEmpleado() {
   const canvasRef = useRef(null);
   const timerRef = useRef(null);
   const streamRef = useRef(null);
-
-  const iniciarCamara = useCallback(async () => {
-    try {
-      setCameraError(false);
-      // Se utiliza una resolución similar al componente CheckIn
-      const mediaStream = await navigator.mediaDevices.getUserMedia({ 
-        video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' } 
-      });
-      if (videoRef.current) {
-        videoRef.current.srcObject = mediaStream;
-        setStreamActivo(true);
-      }
-      streamRef.current = mediaStream;
-    } catch (err) {
-      console.error("Error al acceder a la cámara:", err);
-      setStreamActivo(false);
-      setCameraError(true);
-    }
-  }, []);
+  const mountedRef = useRef(true);
 
   const detenerCamara = useCallback(() => {
     if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current.getTracks().forEach((track) => track.stop());
       streamRef.current = null;
+    }
+    if (videoRef.current?.srcObject) {
+      const currentStream = videoRef.current.srcObject;
+      if (currentStream && typeof currentStream.getTracks === 'function') {
+        currentStream.getTracks().forEach((track) => track.stop());
+      }
+      videoRef.current.srcObject = null;
     }
     setStreamActivo(false);
   }, []);
 
+  const iniciarCamara = useCallback(async () => {
+    try {
+      setCameraError(false);
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((track) => track.stop());
+        streamRef.current = null;
+      }
+      // Se utiliza una resolución similar al componente CheckIn
+      const mediaStream = await navigator.mediaDevices.getUserMedia({ 
+        video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' } 
+      });
+      if (!mountedRef.current) {
+        mediaStream.getTracks().forEach((track) => track.stop());
+        return;
+      }
+      streamRef.current = mediaStream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = mediaStream;
+      }
+      setStreamActivo(true);
+    } catch (err) {
+      console.error("Error al acceder a la cámara:", err);
+      if (mountedRef.current) {
+        setStreamActivo(false);
+        setCameraError(true);
+      }
+    }
+  }, []);
+
   useEffect(() => {
+    mountedRef.current = true;
     if (paso === 'camara') {
       iniciarCamara();
     } else {
       detenerCamara();
     }
-    return () => detenerCamara();
+    return () => {
+      mountedRef.current = false;
+      detenerCamara();
+    };
   }, [paso, iniciarCamara, detenerCamara]);
 
   const handleCerrarSesion = useCallback(() => {

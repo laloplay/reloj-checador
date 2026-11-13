@@ -1,16 +1,25 @@
 import { useEffect, useState } from 'react';
-import { Check, X, Smartphone, AlertCircle, Pencil, Trash2, Save } from 'lucide-react';
+import { Check, X, Smartphone, Pencil, Trash2 } from 'lucide-react';
 import api from '../../services/api';
+import { useAlert } from '../../context/AlertContext';
 
 export function AdminDispositivos() {
+  const { mostrarAlerta, confirmar } = useAlert();
   const [dispositivos, setDispositivos] = useState([]);
   const [sucursales, setSucursales] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [procesandoId, setProcesandoId] = useState(null);
   const [sucursalesSeleccionadas, setSucursalesSeleccionadas] = useState({});
   const [tiposSeleccionados, setTiposSeleccionados] = useState({});
-  const [editando, setEditando] = useState(null);
-  const [formularioEdicion, setFormularioEdicion] = useState({});
+  const [dispositivoEditando, setDispositivoEditando] = useState(null);
+  const [formularioEdicion, setFormularioEdicion] = useState({
+    nombre_dispositivo: '',
+    ubicacion: '',
+    sucursal_id: '',
+    tipo: 'kiosco',
+  });
+  const [errorEdicion, setErrorEdicion] = useState('');
+  const [guardandoEdicion, setGuardandoEdicion] = useState(false);
 
   const cargarDispositivos = async () => {
     try {
@@ -43,7 +52,7 @@ export function AdminDispositivos() {
   const aprobar = async (id) => {
     const sucursal_id = sucursalesSeleccionadas[id];
     if (!sucursal_id) {
-      alert('Por favor, selecciona una sucursal para el dispositivo.');
+      mostrarAlerta('Por favor, selecciona una sucursal para el dispositivo.', 'warning');
       return;
     }
 
@@ -53,9 +62,11 @@ export function AdminDispositivos() {
         sucursal_id,
         tipo: tiposSeleccionados[id] || 'kiosco',
       });
+      mostrarAlerta('Dispositivo aprobado correctamente.', 'success');
       await cargarDispositivos();
     } catch (error) {
       console.error('Error al aprobar dispositivo:', error);
+      mostrarAlerta('Error al aprobar el dispositivo.', 'error');
     } finally {
       setProcesandoId(null);
     }
@@ -65,16 +76,19 @@ export function AdminDispositivos() {
     try {
       setProcesandoId(id);
       await api.put(`/dispositivos/${id}/rechazar`);
+      mostrarAlerta('Dispositivo rechazado.', 'info');
       await cargarDispositivos();
     } catch (error) {
       console.error('Error al rechazar dispositivo:', error);
+      mostrarAlerta('Error al rechazar el dispositivo.', 'error');
     } finally {
       setProcesandoId(null);
     }
   };
 
   const iniciarEdicion = (dispositivo) => {
-    setEditando(dispositivo.id);
+    setErrorEdicion('');
+    setDispositivoEditando(dispositivo);
     setFormularioEdicion({
       nombre_dispositivo: dispositivo.nombre_dispositivo || '',
       ubicacion: dispositivo.ubicacion || '',
@@ -83,37 +97,64 @@ export function AdminDispositivos() {
     });
   };
 
+  const cerrarModalEdicion = () => {
+    if (guardandoEdicion) return;
+    setDispositivoEditando(null);
+    setErrorEdicion('');
+  };
+
   const actualizarCampo = (campo, valor) => {
     setFormularioEdicion((prev) => ({ ...prev, [campo]: valor }));
   };
 
-  const guardarEdicion = async (id) => {
-    if (!formularioEdicion.nombre_dispositivo.trim()) {
-      alert('El nombre del dispositivo es requerido.');
+  const guardarEdicion = async (e) => {
+    e.preventDefault();
+    if (!dispositivoEditando) return;
+
+    const nombreLimpio = formularioEdicion.nombre_dispositivo.trim();
+    if (!nombreLimpio) {
+      setErrorEdicion('El nombre del dispositivo es obligatorio.');
       return;
     }
 
     try {
-      setProcesandoId(id);
-      await api.put(`/dispositivos/${id}`, formularioEdicion);
-      setEditando(null);
+      setGuardandoEdicion(true);
+      setErrorEdicion('');
+      await api.put(`/dispositivos/${dispositivoEditando.id}`, {
+        ...formularioEdicion,
+        nombre_dispositivo: nombreLimpio,
+        ubicacion: formularioEdicion.ubicacion.trim(),
+        sucursal_id: formularioEdicion.sucursal_id || null,
+      });
+      setDispositivoEditando(null);
       await cargarDispositivos();
     } catch (error) {
       console.error('Error al actualizar dispositivo:', error);
+      setErrorEdicion(
+        error.response?.data?.message || 'Error al actualizar el dispositivo.'
+      );
     } finally {
-      setProcesandoId(null);
+      setGuardandoEdicion(false);
     }
   };
 
   const eliminar = async (id) => {
-    if (!window.confirm('¿Seguro que deseas eliminar este dispositivo? Esta acción no se puede deshacer.')) return;
+    const confirmado = await confirmar({
+      titulo: 'Eliminar dispositivo',
+      mensaje: '¿Seguro que deseas eliminar este dispositivo? Esta acción no se puede deshacer.',
+      textoConfirmar: 'Sí, eliminar',
+      variante: 'danger',
+    });
+    if (!confirmado) return;
 
     try {
       setProcesandoId(id);
       await api.delete(`/dispositivos/${id}`);
+      mostrarAlerta('Dispositivo eliminado correctamente.', 'success');
       await cargarDispositivos();
     } catch (error) {
       console.error('Error al eliminar dispositivo:', error);
+      mostrarAlerta('Error al eliminar el dispositivo.', 'error');
     } finally {
       setProcesandoId(null);
     }
@@ -158,10 +199,6 @@ export function AdminDispositivos() {
       <div className="relative mx-auto flex max-w-7xl flex-col gap-6 px-4 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
         <div className="mb-6 flex flex-col gap-4 sm:mb-8 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-500/10 px-3 py-1 text-[10px] font-medium uppercase tracking-[0.28em] text-cyan-100">
-              <Smartphone size={12} />
-              Administración del sistema
-            </div>
             <h1 className="mt-3 text-3xl font-medium tracking-tight text-white sm:text-4xl">Dispositivos</h1>
           </div>
         </div>
@@ -242,68 +279,19 @@ export function AdminDispositivos() {
                           {new Date(dispositivo.created_at).toLocaleDateString('es-ES')}
                         </td>
                         <td className="py-4 px-4">
-                          {editando === dispositivo.id ? (
+                          {dispositivo.estado === 'pendiente' ? (
                             <div className="flex flex-wrap gap-2 justify-center items-center">
-                              <input
-                                value={formularioEdicion.nombre_dispositivo}
-                                onChange={(e) => actualizarCampo('nombre_dispositivo', e.target.value)}
-                                placeholder="Nombre"
-                                className="w-40 px-3 py-2 bg-black/20 border border-white/5 rounded-xl text-white text-sm focus:outline-none focus:border-cyan-400 focus:bg-white/10 shadow-inner transition"
-                              />
-                              <input
-                                value={formularioEdicion.ubicacion}
-                                onChange={(e) => actualizarCampo('ubicacion', e.target.value)}
-                                placeholder="Ubicación"
-                                className="w-40 px-3 py-2 bg-black/20 border border-white/5 rounded-xl text-white text-sm focus:outline-none focus:border-cyan-400 focus:bg-white/10 shadow-inner transition"
-                              />
-                              <select
-                                value={formularioEdicion.sucursal_id}
-                                onChange={(e) => actualizarCampo('sucursal_id', e.target.value)}
-                                className="px-3 py-2 bg-black/20 border border-white/5 rounded-xl text-white text-sm focus:outline-none focus:border-cyan-400 focus:bg-white/10 shadow-inner transition"
-                              >
-                                <option value="">Sin sucursal</option>
-                                {sucursales.filter((s) => s.activo).map((sucursal) => (
-                                  <option key={sucursal.id} value={sucursal.id}>{sucursal.nombre}</option>
-                                ))}
-                              </select>
-                              <select
-                                value={formularioEdicion.tipo}
-                                onChange={(e) => actualizarCampo('tipo', e.target.value)}
-                                className="px-3 py-2 bg-black/20 border border-white/5 rounded-xl text-white text-sm focus:outline-none focus:border-cyan-400 focus:bg-white/10 shadow-inner transition"
-                              >
-                                <option value="kiosco">🖥️ Kiosco</option>
-                                <option value="administracion">⚙️ Administración</option>
-                              </select>
-                              <button
-                                onClick={() => guardarEdicion(dispositivo.id)}
-                                disabled={procesandoId === dispositivo.id}
-                                title="Guardar cambios"
-                                className="inline-flex items-center gap-1 px-3 py-2 bg-emerald-500/10 text-emerald-300 border border-emerald-400/20 rounded-xl hover:bg-emerald-500/20 disabled:opacity-50 transition text-sm"
-                              >
-                                <Save size={16} /> Guardar
-                              </button>
-                              <button
-                                onClick={() => setEditando(null)}
-                                disabled={procesandoId === dispositivo.id}
-                                title="Cancelar edición"
-                                className="inline-flex items-center gap-1 px-3 py-2 bg-white/5 border border-white/10 text-gray-300 rounded-xl hover:bg-white/10 disabled:opacity-50 transition text-sm"
-                              >
-                                <X size={16} /> Cancelar
-                              </button>
-                            </div>
-                          ) : dispositivo.estado === 'pendiente' ? (
-                            <div className="flex gap-2 justify-center items-center">
                               <select
                                 value={sucursalesSeleccionadas[dispositivo.id] || ''}
                                 onChange={(e) => handleSucursalChange(dispositivo.id, e.target.value)}
                                 className="px-3 py-2 bg-black/20 border border-white/5 rounded-xl text-white text-sm focus:outline-none focus:border-cyan-400 focus:bg-white/10 shadow-inner transition"
                                 onClick={(e) => e.stopPropagation()}
                               >
-                                <option value="" disabled>Asignar sucursal</option>
+                                <option value="" disabled className="bg-slate-900 text-white">Asignar sucursal</option>
                                 {sucursales
                                   .filter((s) => s.activo)
                                   .map((sucursal) => (
-                                    <option key={sucursal.id} value={sucursal.id}>
+                                    <option key={sucursal.id} value={sucursal.id} className="bg-slate-900 text-white">
                                       {sucursal.nombre}
                                     </option>
                                   ))}
@@ -314,8 +302,8 @@ export function AdminDispositivos() {
                                 className="px-3 py-2 bg-black/20 border border-white/5 rounded-xl text-white text-sm focus:outline-none focus:border-cyan-400 focus:bg-white/10 shadow-inner transition"
                                 onClick={(e) => e.stopPropagation()}
                               >
-                                <option value="kiosco">🖥️ Kiosco</option>
-                                <option value="administracion">⚙️ Administración</option>
+                                <option value="kiosco" className="bg-slate-900 text-white">🖥️ Kiosco</option>
+                                <option value="administracion" className="bg-slate-900 text-white">⚙️ Administración</option>
                               </select>
                               <button
                                 onClick={() => aprobar(dispositivo.id)}
@@ -376,6 +364,136 @@ export function AdminDispositivos() {
                   })}
                 </tbody>
               </table>
+            </div>
+          </div>
+        )}
+
+        {/* Modal de Edición de Dispositivo */}
+        {dispositivoEditando && (
+          <div
+            onClick={cerrarModalEdicion}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-3 backdrop-blur-md sm:p-4"
+          >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="flex max-h-[calc(100dvh-1.5rem)] w-full max-w-md flex-col overflow-hidden rounded-[1.75rem] border border-white/10 bg-white/2 shadow-[0_24px_80px_rgba(0,0,0,0.5)] backdrop-blur-3xl"
+            >
+              <div className="flex items-center justify-between border-b border-white/10 px-5 pb-4 pt-5 sm:px-7 sm:pb-5 sm:pt-6">
+                <div className="min-w-0">
+                  <h2 className="m-0 text-lg font-light tracking-wide text-gray-100">
+                    Editar dispositivo
+                  </h2>
+                  <p className="mt-1 truncate font-mono text-xs text-slate-500">
+                    ID: {dispositivoEditando.fingerprint?.substring(0, 16)}...
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={cerrarModalEdicion}
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-gray-400 transition hover:bg-white/10 hover:text-gray-200"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              <form onSubmit={guardarEdicion} className="flex max-h-[calc(100dvh-10rem)] flex-col">
+                <div className="flex flex-col gap-4 overflow-y-auto px-5 py-5 sm:px-7">
+                  {errorEdicion && (
+                    <div className="rounded-xl border border-rose-400/20 bg-rose-500/10 px-3.5 py-2.5 text-xs text-rose-300">
+                      {errorEdicion}
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-widest text-gray-500">
+                      Nombre del dispositivo
+                    </label>
+                    <input
+                      type="text"
+                      value={formularioEdicion.nombre_dispositivo}
+                      onChange={(e) => actualizarCampo('nombre_dispositivo', e.target.value)}
+                      placeholder="Ej. Kiosco Entrada Principal"
+                      required
+                      className="w-full rounded-xl border border-white/5 bg-black/20 px-3 py-2.5 text-sm text-white shadow-inner transition focus:border-cyan-400 focus:bg-white/10 focus:outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-widest text-gray-500">
+                      Ubicación
+                    </label>
+                    <input
+                      type="text"
+                      value={formularioEdicion.ubicacion}
+                      onChange={(e) => actualizarCampo('ubicacion', e.target.value)}
+                      placeholder="Ej. Recepción Planta Baja"
+                      className="w-full rounded-xl border border-white/5 bg-black/20 px-3 py-2.5 text-sm text-white shadow-inner transition focus:border-cyan-400 focus:bg-white/10 focus:outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-widest text-gray-500">
+                      Sucursal
+                    </label>
+                    <select
+                      value={formularioEdicion.sucursal_id}
+                      onChange={(e) => actualizarCampo('sucursal_id', e.target.value)}
+                      className="w-full rounded-xl border border-white/5 bg-black/20 px-3 py-2.5 text-sm text-white shadow-inner transition focus:border-cyan-400 focus:bg-white/10 focus:outline-none"
+                    >
+                      <option value="" className="bg-slate-900 text-white">
+                        Sin sucursal asignada
+                      </option>
+                      {sucursales
+                        .filter((s) => s.activo)
+                        .map((sucursal) => (
+                          <option
+                            key={sucursal.id}
+                            value={sucursal.id}
+                            className="bg-slate-900 text-white"
+                          >
+                            {sucursal.nombre}
+                          </option>
+                        ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="mb-1.5 block text-[11px] font-medium uppercase tracking-widest text-gray-500">
+                      Tipo de acceso
+                    </label>
+                    <select
+                      value={formularioEdicion.tipo}
+                      onChange={(e) => actualizarCampo('tipo', e.target.value)}
+                      className="w-full rounded-xl border border-white/5 bg-black/20 px-3 py-2.5 text-sm text-white shadow-inner transition focus:border-cyan-400 focus:bg-white/10 focus:outline-none"
+                    >
+                      <option value="kiosco" className="bg-slate-900 text-white">
+                        Kiosco (Reloj Checador)
+                      </option>
+                      <option value="administracion" className="bg-slate-900 text-white">
+                        Administración
+                      </option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="flex gap-3 border-t border-white/10 px-5 pb-5 pt-4 sm:px-7 sm:pb-6">
+                  <button
+                    type="button"
+                    onClick={cerrarModalEdicion}
+                    disabled={guardandoEdicion}
+                    className="flex-1 rounded-xl border border-white/10 bg-white/5 py-2.5 text-sm font-medium text-gray-300 transition hover:bg-white/10 disabled:opacity-50"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={guardandoEdicion}
+                    className="flex-1 rounded-xl bg-cyan-600 py-2.5 text-sm font-medium text-white shadow-lg shadow-cyan-900/20 transition hover:bg-cyan-500 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {guardandoEdicion ? 'Guardando...' : 'Guardar cambios'}
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         )}

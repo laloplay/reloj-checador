@@ -5,36 +5,76 @@ require('dayjs/locale/es');
 dayjs.extend(isBetween);
 dayjs.locale('es');
 
-const calcularBonoQuincena = (diasQuincena) => {
+const evaluarDiasParaBono = (diasLista, participaBono = true) => {
+  if (!participaBono) {
+    return { valido: false, invalidoConfirmado: true, diasEvaluables: 0 };
+  }
+
+  const diasEvaluables = diasLista.filter((dia) => {
+    if (dia.es_futuro) return false;
+    const esSoloNoLaborable =
+      dia.condiciones.every((condicion) =>
+        ['descanso', 'festivo', 'cumpleanos', 'previo_ingreso'].includes(condicion.tipo)
+      ) && !dia.hora_entrada;
+    return !esSoloNoLaborable;
+  });
+
+  if (diasEvaluables.length === 0) {
+    return { valido: false, invalidoConfirmado: false, diasEvaluables: 0 };
+  }
+
+  // Si en un solo día laborable tuvo falta, retardo, permiso, vacaciones o llegó fuera del tiempo de bono (!dia.tiene_bono), el bono queda inválido
+  const invalidaBono = diasEvaluables.some(
+    (dia) =>
+      !dia.tiene_bono ||
+      dia.condiciones.some((condicion) =>
+        ['retardo', 'falta', 'permiso', 'vacaciones'].includes(condicion.tipo)
+      )
+  );
+
+  return {
+    valido: !invalidaBono,
+    invalidoConfirmado: invalidaBono,
+    diasEvaluables: diasEvaluables.length,
+  };
+};
+
+const calcularBonoQuincena = (diasQuincena, participaBono = true) => {
+  const evaluacion = evaluarDiasParaBono(diasQuincena, participaBono);
+
+  // Si ya falló un día en la quincena, el bono queda inválido de inmediato aunque falten días futuros
+  if (evaluacion.invalidoConfirmado) {
+    return false;
+  }
+
   if (diasQuincena.some((dia) => dia.es_futuro)) {
     return null;
   }
 
-  const diasEvaluables = diasQuincena.filter((dia) => {
-    if (dia.es_futuro) return false;
-    const esSoloDescansoOFestivo = dia.condiciones.every((condicion) =>
-      ['descanso', 'festivo'].includes(condicion.tipo)
-    ) && !dia.hora_entrada;
-    return !esSoloDescansoOFestivo;
-  });
-
-  if (diasEvaluables.length === 0) {
+  if (evaluacion.diasEvaluables === 0) {
     return null;
   }
 
-  const invalidaBono = diasEvaluables.some((dia) =>
-    dia.condiciones.some((condicion) =>
-      ['retardo', 'falta', 'permiso', 'vacaciones'].includes(condicion.tipo)
-    )
-  );
-
-  return !invalidaBono;
+  return evaluacion.valido;
 };
 
 async function construirDiasEmpleado(empleadoId, diasDescanso, fechaInicio, fechaFin, pool) {
+  const convertirFechaCalendario = (fecha) => {
+    const fechaTexto = fecha instanceof Date
+      ? dayjs(fecha).format('YYYY-MM-DD')
+      : String(fecha).slice(0, 10);
+    return dayjs(fechaTexto).startOf('day');
+  };
+  const inicio = convertirFechaCalendario(fechaInicio);
+  const fin = convertirFechaCalendario(fechaFin);
+
   const [empleadoRes, festivosRes, ausenciasRes, checadasRes] = await Promise.all([
     pool.query(
-      'SELECT nombre_completo, fecha_nacimiento FROM empleados WHERE id = $1',
+      `SELECT e.nombre_completo, e.fecha_nacimiento, e.aplica_bono,
+              t.bono_activo AS turno_bono_activo, t.minutos_bono AS turno_minutos_bono
+       FROM empleados e
+       LEFT JOIN turnos t ON e.turno_id = t.id
+       WHERE e.id = $1`,
       [empleadoId]
     ),
     pool.query(
@@ -45,9 +85,9 @@ async function construirDiasEmpleado(empleadoId, diasDescanso, fechaInicio, fech
        FROM ausencias
        WHERE empleado_id = $1
          AND aprobado = TRUE
-         AND fecha_fin >= $2
-         AND fecha_inicio <= $3`,
-      [empleadoId, fechaInicio.toISOString(), fechaFin.toISOString()]
+         AND fecha_fin >= $2::date
+         AND fecha_inicio <= $3::date`,
+      [empleadoId, inicio.format('YYYY-MM-DD'), fin.format('YYYY-MM-DD')]
     ),
     pool.query(
       `SELECT timestamp, tipo, es_retardo, tiene_bono
@@ -55,7 +95,7 @@ async function construirDiasEmpleado(empleadoId, diasDescanso, fechaInicio, fech
        WHERE empleado_id = $1
          AND timestamp BETWEEN $2 AND $3
        ORDER BY timestamp ASC`,
-      [empleadoId, fechaInicio.toISOString(), fechaFin.toISOString()]
+      [empleadoId, inicio.startOf('day').toDate().toISOString(), fin.endOf('day').toDate().toISOString()]
     ),
   ]);
 
@@ -88,14 +128,6 @@ async function construirDiasEmpleado(empleadoId, diasDescanso, fechaInicio, fech
   let totalFaltas = 0;
   let diasLaborables = 0;
   const ahora = dayjs();
-  const convertirFechaCalendario = (fecha) => {
-    const fechaTexto = fecha instanceof Date
-      ? fecha.toISOString().slice(0, 10)
-      : String(fecha).slice(0, 10);
-    return dayjs(fechaTexto).startOf('day');
-  };
-  const inicio = convertirFechaCalendario(fechaInicio);
-  const fin = convertirFechaCalendario(fechaFin);
 
   for (let diaActual = inicio; !diaActual.isAfter(fin, 'day'); diaActual = diaActual.add(1, 'day')) {
     const fecha = diaActual.format('YYYY-MM-DD');
@@ -209,6 +241,10 @@ async function construirDiasEmpleado(empleadoId, diasDescanso, fechaInicio, fech
   const diasPrimeraQuincena = dias.filter((dia) => dia.dia_num <= 15);
   const diasSegundaQuincena = dias.filter((dia) => dia.dia_num > 15);
 
+  const participaBono =
+    empleado.aplica_bono !== false && empleado.turno_bono_activo !== false;
+  const evaluacionPeriodo = evaluarDiasParaBono(dias, participaBono);
+
   return {
     dias,
     estadisticas: {
@@ -218,10 +254,12 @@ async function construirDiasEmpleado(empleadoId, diasDescanso, fechaInicio, fech
       total_bonos: totalBonos,
       total_faltas: totalFaltas,
       dias_laborables: diasLaborables,
+      participa_bono: participaBono,
+      bono_valido: evaluacionPeriodo.valido,
     },
-    bono_primera_quincena: calcularBonoQuincena(diasPrimeraQuincena),
-    bono_segunda_quincena: calcularBonoQuincena(diasSegundaQuincena),
+    bono_primera_quincena: calcularBonoQuincena(diasPrimeraQuincena, participaBono),
+    bono_segunda_quincena: calcularBonoQuincena(diasSegundaQuincena, participaBono),
   };
 }
 
-module.exports = { construirDiasEmpleado };
+module.exports = { construirDiasEmpleado, evaluarDiasParaBono };

@@ -104,9 +104,13 @@ router.get('/por-sucursal', async (req, res) => {
          e.id,
          e.nombre_completo,
          e.dia_descanso,
+         e.aplica_bono,
          p.nombre AS puesto_nombre,
+         t.nombre AS turno_nombre,
          t.hora_inicio AS turno_hora_inicio,
          t.hora_fin AS turno_hora_fin,
+         t.minutos_bono AS turno_minutos_bono,
+         t.bono_activo AS turno_bono_activo,
          s.id AS sucursal_id,
          s.nombre AS sucursal_nombre
        FROM empleados e
@@ -143,18 +147,26 @@ router.get('/por-sucursal', async (req, res) => {
       const {
         id,
         nombre_completo,
+        aplica_bono,
         puesto_nombre,
+        turno_nombre,
         turno_hora_inicio,
         turno_hora_fin,
+        turno_minutos_bono,
+        turno_bono_activo,
       } = empleado;
 
       grupos.get(sucursalKey).empleados.push({
         empleado: {
           id,
           nombre_completo,
+          aplica_bono,
           puesto_nombre,
+          turno_nombre,
           turno_hora_inicio,
           turno_hora_fin,
+          turno_minutos_bono,
+          turno_bono_activo,
           sucursal_id: empleado.sucursal_id,
           sucursal_nombre: empleado.sucursal_nombre,
         },

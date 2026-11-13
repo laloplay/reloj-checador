@@ -19,14 +19,19 @@ export function AdminLogin() {
     e.preventDefault();
     setError(null);
 
-    if (!username || !password) {
+    const cleanUsername = username.trim();
+
+    if (!cleanUsername || !password) {
       setError('Por favor completa todos los campos');
       return;
     }
 
     try {
       setCargando(true);
-      const response = await api.post('/auth/login', { username, password });
+      const response = await api.post('/auth/login', {
+        username: cleanUsername,
+        password,
+      });
       const { token } = response.data;
 
       login(token);
@@ -59,11 +64,7 @@ export function AdminLogin() {
 
         <main className="overflow-hidden rounded-3xl border border-white/10 bg-white/5 shadow-[0_28px_80px_rgba(0,0,0,0.28)] backdrop-blur-2xl sm:rounded-[1.75rem]">
           <div className="border-b border-white/5 p-5 sm:p-7">
-            <div className="inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-500/10 px-3 py-1 text-[10px] uppercase tracking-[0.3em] text-cyan-100">
-              <LockKeyhole size={12} />
-              Acceso seguro
-            </div>
-            <h1 className="mt-4 text-3xl font-medium tracking-tight text-white sm:text-4xl">Panel Admin</h1>
+            <h1 className="text-3xl font-medium tracking-tight text-white sm:text-4xl">Panel Admin</h1>
             <p className="mt-2 text-sm text-slate-400 sm:text-base">Ingresa tus credenciales para continuar.</p>
           </div>
 
@@ -76,6 +77,7 @@ export function AdminLogin() {
                   type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
+                  onBlur={() => setUsername((prev) => prev.trim())}
                   placeholder="admin"
                   autoComplete="username"
                   className="w-full rounded-xl border border-white/10 bg-slate-950/50 py-3 pl-11 pr-4 text-white placeholder-slate-500 outline-none transition focus:border-cyan-400/50 focus:bg-slate-950/70 focus:ring-2 focus:ring-cyan-400/15"
